@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>И.П Толкачёва</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --ink: #1a1710;
+    --warm: #c8a97e;
+    --rust: #9b4f2a;
+    --sage: #5a7a5a;
+    --muted: #8a8270;
+    --card-bg: #faf7f2;
+    --border: #e0d8cc;
+    --shadow: rgba(26,23,16,0.12);
+    --overlay: rgba(26,23,16,0.6);
+    /* дополнительные переменные для календаря */
+    --font-sans: 'DM Sans', sans-serif;
+    --color-text-primary: var(--ink);
+    --color-text-secondary: var(--muted);
+    --color-text-tertiary: #8a8270;
+    --color-border-secondary: var(--border);
+    --color-border-tertiary: #d0c8b8;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f0e8;
+    --border-radius-md: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .logo span { color: var(--warm); }
+  .header-nav { display: flex; gap: 12px; }
+  .btn-header {
+    background: transparent;
+    color: var(--cream);
+    border: 1px solid rgba(245,240,232,0.3);
+    padding: 8px 20px;
+    border-radius: 3px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-header:hover { background: var(--warm); border-color: var(--warm); color: var(--ink); }
+  .btn-header.active { background: var(--warm); border-color: var(--warm); color: var(--ink); }
+
+  /* ── MAIN VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 56px 32px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 70% 50%, rgba(200,169,126,0.18) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    font-weight: 300;
+    line-height: 1.1;
+    margin-bottom: 14px;
+  }
+  .hero p {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 440px;
+    margin: 0 auto;
+    font-weight: 300;
+  }
+
+  /* ── GRID ── */
+  .grid-section { padding: 40px 32px 60px; }
+  .grid-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 28px;
+  }
+  @media (max-width: 640px) {
+    .cards-grid { grid-template-columns: 1fr; }
+    header { padding: 0 16px; }
+    .hero { padding: 36px 16px 32px; }
+    .grid-section { padding: 28px 16px 48px; }
+  }
+  @media (min-width: 1200px) {
+    .cards-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.25s, box-shadow 0.25s;
+    position: relative;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px var(--shadow); }
+
+  /* Carousel */
+  .carousel { position: relative; height: 220px; overflow: hidden; background: #e8e0d4; }
+  .carousel-track { display: flex; height: 100%; transition: transform 0.38s cubic-bezier(.4,0,.2,1); }
+  .carousel-track img {
+    min-width: 100%; height: 100%; object-fit: cover; flex-shrink: 0;
+    pointer-events: none; user-select: none;
+  }
+  .carousel-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(26,23,16,0.55); color: #fff;
+    border: none; width: 32px; height: 32px; border-radius: 50%;
+    font-size: 0.9rem; cursor: pointer; z-index: 5;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .carousel-btn:hover { background: rgba(26,23,16,0.85); }
+  .carousel-btn.prev { left: 10px; }
+  .carousel-btn.next { right: 10px; }
+  .carousel-dots {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 5px;
+  }
+  .carousel-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.5); transition: background 0.2s;
+  }
+  .carousel-dot.active { background: #fff; }
+
+  /* Card body */
+  .card-body { padding: 18px 20px 20px; }
+  .card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+  .card-meta { font-size: 0.82rem; color: var(--muted); margin-bottom: 14px; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; }
+  .card-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .card-price span { font-family: 'DM Sans', sans-serif; font-size: 0.78rem; color: var(--muted); font-weight: 400; }
+  .btn-detail {
+    background: var(--ink); color: var(--cream);
+    border: none; padding: 8px 16px; border-radius: 3px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    cursor: pointer; pointer-events: none;
+    transition: background 0.2s;
+  }
+  .card:hover .btn-detail { background: var(--rust); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: var(--overlay);
+    z-index: 1000;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+    backdrop-filter: blur(3px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--cream);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 860px;
+    position: relative;
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .modal-close {
+    position: absolute; top: 16px; right: 16px;
+    background: rgba(26,23,16,0.6); color: #fff;
+    border: none; width: 36px; height: 36px; border-radius: 50%;
+    font-size: 1.1rem; cursor: pointer; z-index: 10;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .modal-close:hover { background: var(--rust); }
+
+  /* Modal gallery */
+  .modal-gallery { position: relative; height: 380px; background: #1a1710; overflow: hidden; }
+  @media (max-width: 600px) { .modal-gallery { height: 240px; } }
+  .modal-gallery-track { display: flex; height: 100%; transition: transform 0.4s cubic-bezier(.4,0,.2,1); }
+  .modal-gallery-track img { min-width: 100%; height: 100%; object-fit: cover; flex-shrink: 0; }
+  .modal-gallery-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(26,23,16,0.55); color: #fff;
+    border: none; width: 44px; height: 44px; border-radius: 50%;
+    font-size: 1.1rem; cursor: pointer; z-index: 5;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .modal-gallery-btn:hover { background: rgba(26,23,16,0.9); }
+  .modal-gallery-btn.prev { left: 16px; }
+  .modal-gallery-btn.next { right: 16px; }
+  .btn-fullscreen {
+    position: absolute; bottom: 14px; right: 14px;
+    background: rgba(26,23,16,0.7); color: #fff;
+    border: 1px solid rgba(255,255,255,0.3); padding: 7px 14px;
+    border-radius: 3px; font-family: 'DM Sans', sans-serif; font-size: 0.75rem;
+    letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-fullscreen:hover { background: var(--ink); }
+  .gallery-counter {
+    position: absolute; bottom: 14px; left: 14px;
+    background: rgba(26,23,16,0.7); color: #fff;
+    font-size: 0.78rem; padding: 5px 10px; border-radius: 3px;
+  }
+
+  /* Modal content */
+  .modal-content { padding: 32px; }
+  @media (max-width: 600px) { .modal-content { padding: 20px; } }
+  .modal-header { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-bottom: 24px; }
+  .modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 500;
+    flex: 1;
+  }
+  .modal-price-box { text-align: right; }
+  .modal-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem; font-weight: 600; color: var(--rust);
+  }
+  .modal-price-label { font-size: 0.78rem; color: var(--muted); }
+  .modal-location { font-size: 0.88rem; color: var(--muted); margin-bottom: 20px; }
+
+  .modal-description { font-size: 0.92rem; line-height: 1.7; color: var(--ink); margin-bottom: 24px; font-weight: 300; }
+
+  .amenities-title {
+    font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 12px;
+  }
+  .amenities { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; }
+  .amenity {
+    background: var(--ink); color: var(--cream);
+    padding: 5px 12px; border-radius: 100px;
+    font-size: 0.8rem; letter-spacing: 0.03em;
+  }
+
+  /* Calendar */
+  .calendar-section { margin-bottom: 16px; }
+  .calendar-section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem; font-weight: 500; margin-bottom: 20px;
+  }
+  .calendar-months { display: flex; flex-wrap: wrap; gap: 28px; }
+  .calendar-month { flex: 1; min-width: 260px; }
+  .month-title {
+    font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 12px; text-align: center;
+  }
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  }
+  .cal-day-name {
+    text-align: center; font-size: 0.68rem; color: var(--muted);
+    letter-spacing: 0.06em; text-transform: uppercase; padding-bottom: 6px;
+  }
+  .cal-day {
+    aspect-ratio: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border-radius: 4px; font-size: 0.72rem; cursor: pointer;
+    transition: opacity 0.15s;
+    line-height: 1.2; padding: 2px;
+  }
+  .cal-day:hover { opacity: 0.8; }
+  .cal-day.empty { cursor: default; }
+  .cal-day.free { background: #e8f0e8; color: #2d5a2d; }
+  .cal-day.free .day-price { font-size: 0.6rem; color: var(--sage); }
+  .cal-day.busy { background: #e8e4dc; color: var(--muted); cursor: not-allowed; }
+  .cal-day.busy .day-status { font-size: 0.58rem; }
+  .cal-day-num { font-weight: 500; }
+
+  /* ── ADMIN ── */
+  .admin-view { padding: 32px; }
+  .admin-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem; font-weight: 400; margin-bottom: 8px;
+  }
+  .admin-subtitle { font-size: 0.85rem; color: var(--muted); margin-bottom: 32px; }
+
+  .admin-section {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 28px; margin-bottom: 24px;
+  }
+  .admin-section-title {
+    font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 20px;
+  }
+
+  select, input, textarea {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 14px;
+    color: var(--ink);
+    transition: border-color 0.2s;
+  }
+  select:focus, input:focus, textarea:focus {
+    outline: none; border-color: var(--warm);
+  }
+  select { cursor: pointer; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block; font-size: 0.78rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+  }
+  .form-group input,
+  .form-group textarea,
+  .form-group select { width: 100%; }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+
+  .btn-primary {
+    background: var(--ink); color: var(--cream);
+    border: none; padding: 12px 28px; border-radius: 4px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-primary:hover { background: var(--rust); }
+  .btn-secondary {
+    background: transparent; color: var(--ink);
+    border: 1px solid var(--border); padding: 10px 22px; border-radius: 4px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s; margin-right: 10px;
+  }
+  .btn-secondary:hover { border-color: var(--ink); }
+
+  /* Admin calendar day edit popup */
+  .day-edit-popup {
+    display: none; position: fixed; z-index: 2000;
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; box-shadow: 0 8px 32px var(--shadow);
+    min-width: 220px;
+  }
+  .day-edit-popup.open { display: block; }
+  .day-edit-popup h4 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem; margin-bottom: 14px;
+  }
+  .popup-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .popup-row label { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+  .popup-row input[type="number"] { width: 100%; }
+  .popup-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--rust); }
+  .popup-btns { display: flex; gap: 8px; margin-top: 16px; }
+  .popup-btns button { flex: 1; padding: 9px 0; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; border-radius: 4px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  .popup-save { background: var(--ink); color: var(--cream); border: none; transition: background 0.2s; }
+  .popup-save:hover { background: var(--rust); }
+  .popup-cancel { background: transparent; color: var(--muted); border: 1px solid var(--border); transition: border-color 0.2s; }
+  .popup-cancel:hover { border-color: var(--ink); color: var(--ink); }
+
+  /* Fullscreen photo */
+  .fullscreen-overlay {
+    display: none; position: fixed; inset: 0;
+    background: #000; z-index: 3000;
+    align-items: center; justify-content: center;
+  }
+  .fullscreen-overlay.open { display: flex; }
+  .fullscreen-overlay img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .fullscreen-close {
+    position: absolute; top: 20px; right: 20px;
+    background: rgba(255,255,255,0.15); color: #fff;
+    border: none; width: 44px; height: 44px; border-radius: 50%;
+    font-size: 1.3rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .fullscreen-close:hover { background: rgba(255,255,255,0.35); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--ink); color: var(--cream);
+    padding: 12px 24px; border-radius: 4px; font-size: 0.85rem;
+    z-index: 5000; transition: transform 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Стили календаря из rental_calendar.html */
+  .cal-root { font-family: var(--font-sans); padding: 1rem 0; user-select: none; }
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .cal-title { font-size: 17px; font-weight: 500; color: var(--color-text-primary); }
+  .cal-subtitle { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
+  .nav-group { display: flex; align-items: center; gap: 8px; }
+  .nav-btn {
+    background: transparent; border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md); width: 36px; height: 36px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--color-text-primary); transition: background .15s;
+    font-size: 15px;
+  }
+  .nav-btn:hover { background: var(--color-background-secondary); }
+  .nav-label {
+    font-size: 14px; font-weight: 500; min-width: 150px; text-align: center;
+    color: var(--color-text-primary);
+  }
+  .months-wrap {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px 28px;
+  }
+  .month-block {}
+  .month-name {
+    font-size: 13px; font-weight: 500; color: var(--color-text-secondary);
+    text-transform: uppercase; letter-spacing: .08em;
+    margin-bottom: 10px; text-align: center;
+  }
+  .month-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+  }
+  .dow {
+    text-align: center; font-size: 11px; color: var(--color-text-tertiary);
+    letter-spacing: .05em; padding-bottom: 4px;
+  }
+  .day {
+    aspect-ratio: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border-radius: var(--border-radius-md); cursor: pointer;
+    transition: background .12s, transform .1s;
+    font-size: 12px; position: relative;
+  }
+  .day:hover { transform: scale(1.1); }
+  .day.empty { cursor: default; pointer-events: none; }
+  .day.empty:hover { transform: none; }
+  .day-num { font-size: 13px; font-weight: 500; line-height: 1; }
+  .day-sub { font-size: 9.5px; line-height: 1; margin-top: 1px; }
+
+  .day.free { background: #EAF3DE; }
+  .day.free .day-num { color: #27500A; }
+  .day.free .day-sub { color: #3B6D11; }
+  .day.free:hover { background: #C0DD97; }
+
+  .day.busy { background: var(--color-background-secondary); cursor: not-allowed; }
+  .day.busy:hover { transform: none; }
+  .day.busy .day-num { color: var(--color-text-tertiary); }
+  .day.busy .day-sub { color: var(--color-text-tertiary); }
+
+  .day.today { outline: 2px solid #378ADD; outline-offset: -2px; }
+  .day.today .day-num { color: #0C447C; }
+
+  .day.selected { background: #185FA5 !important; outline: none; }
+  .day.selected .day-num { color: #E6F1FB !important; }
+  .day.selected .day-sub { color: #B5D4F4 !important; }
+
+  .day.range { background: #B5D4F4; }
+  .day.range .day-num { color: #042C53; }
+  .day.range .day-sub { color: #185FA5; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    margin-top: 20px; padding-top: 16px;
+    border-top: 0.5px solid var(--color-border-tertiary);
+    font-size: 12px; color: var(--color-text-secondary);
+  }
+  .leg-item { display: flex; align-items: center; gap: 6px; }
+  .leg-dot { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+
+  .info-bar {
+    margin-top: 16px; padding: 12px 14px;
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md);
+    font-size: 13px; color: var(--color-text-secondary);
+    min-height: 40px; transition: all .2s;
+  }
+  .info-bar.has-range { color: var(--color-text-primary); }
+  .info-bar b { font-weight: 500; }
+
+  .view-toggle {
+    display: flex; gap: 4px; background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md); padding: 3px;
+  }
+  .vt-btn {
+    border: none; background: transparent; cursor: pointer;
+    border-radius: 6px; padding: 4px 10px; font-size: 12px;
+    color: var(--color-text-secondary); transition: all .15s;
+  }
+  .vt-btn.active {
+    background: var(--color-background-primary);
+    color: var(--color-text-primary); font-weight: 500;
+    border: 0.5px solid var(--color-border-tertiary);
+  }
+
+  /* Ограничение размера календаря в админ-панели */
+  .admin-section .cal-root {
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  .admin-section .months-wrap {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">И.П Толкачёва</div>
+  <div class="header-nav">
+    <button class="btn-header active" id="btnCatalog" onclick="showView('catalog')">Каталог</button>
+    <button class="btn-header" id="btnAdmin" onclick="showView('admin')">Админ</button>
+  </div>
+</header>
+
+<!-- CATALOG VIEW -->
+<div class="view active" id="viewCatalog">
+  <div class="grid-section">
+    <div class="grid-label">Доступные объекты</div>
+    <div class="cards-grid" id="cardsGrid"></div>
+  </div>
+</div>
+
+<!-- ADMIN VIEW -->
+<div class="view" id="viewAdmin">
+  <div class="admin-view">
+    <div class="admin-title">Панель управления</div>
+    <div class="admin-subtitle">Управление объектами недвижимости и расписанием</div>
+
+    <!-- Calendar manager -->
+    <div class="admin-section">
+      <div class="admin-section-title">Управление календарём</div>
+      <div class="form-group">
+        <label>Выбрать объект</label>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <select id="adminHouseSelect" onchange="renderAdminCalendar()" style="flex: 1;">
+            <option value="">— выберите объект —</option>
+          </select>
+          <button class="btn-primary" onclick="editSelectedHouse()" style="white-space: nowrap; padding: 6px 12px; font-size: 0.8rem;">Редактировать</button>
+          <button class="btn-primary" onclick="deleteSelectedHouse()" style="white-space: nowrap; padding: 6px 12px; font-size: 0.8rem;">Удалить</button>
+        </div>
+      </div>
+      <div id="adminCalendarWrap"></div>
+    </div>
+
+    <!-- Add house -->
+    <div class="admin-section">
+      <div class="admin-section-title">Добавить новый объект</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Название</label>
+          <input type="text" id="newTitle" placeholder="Коттедж «Сосновый бор»">
+        </div>
+        <div class="form-group">
+          <label>Область / Город, площадь</label>
+          <input type="text" id="newLocation" placeholder="Москва, 120 м²">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Базовая цена за ночь ($)</label>
+          <input type="number" id="newPrice" placeholder="150">
+        </div>
+        <div class="form-group">
+          <label>Удобства (через запятую)</label>
+          <input type="text" id="newAmenities" placeholder="Wi-Fi, Парковка, Кухня">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Описание</label>
+        <textarea id="newDesc" placeholder="Краткое описание объекта..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Ссылки на фото (по одной на строку)</label>
+        <textarea id="newPhotos" placeholder="https://picsum.photos/seed/house1/800/600&#10;https://picsum.photos/seed/house2/800/600"></textarea>
+      </div>
+      <button class="btn-primary" id="addHouseBtn" onclick="addHouse()">+ Добавить объект</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModalDirect()">✕</button>
+
+    <div class="modal-gallery">
+      <div class="modal-gallery-track" id="modalGalleryTrack"></div>
+      <button class="modal-gallery-btn prev" onclick="modalGalleryNav(-1)">&#8592;</button>
+      <button class="modal-gallery-btn next" onclick="modalGalleryNav(1)">&#8594;</button>
+      <button class="btn-fullscreen" onclick="openFullscreen()">⤢ Полный экран</button>
+      <div class="gallery-counter" id="galleryCounter">1 / 1</div>
+    </div>
+
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle"></div>
+        <div class="modal-price-box">
+          <div class="modal-price" id="modalPrice"></div>
+          <div class="modal-price-label">за ночь</div>
+        </div>
+      </div>
+      <div class="modal-location" id="modalLocation"></div>
+      <div class="modal-description" id="modalDesc"></div>
+      <div class="amenities-title">Удобства</div>
+      <div class="amenities" id="modalAmenities"></div>
+      <div class="calendar-section">
+        <div class="calendar-section-title">Доступность и цены</div>
+        <div class="cal-root" id="modalCalendar">
+          <h2 class="sr-only">Интерактивный календарь аренды с навигацией по месяцам</h2>
+
+          <div class="cal-header">
+            <div>
+              <div class="cal-title">Доступность и цены</div>
+              <div class="cal-subtitle" id="rangeLabel">Выберите даты заезда и выезда</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <div class="view-toggle">
+                <button class="vt-btn active" id="btn1m" onclick="setView(1)">1 мес</button>
+                <button class="vt-btn" id="btn3m" onclick="setView(3)">3 мес</button>
+                <button class="vt-btn" id="btn6m" onclick="setView(6)">6 мес</button>
+              </div>
+              <div class="nav-group">
+                <button class="nav-btn" onclick="shift(-1)" aria-label="назад">
+                  ←
+                </button>
+                <div class="nav-label" id="navLabel"></div>
+                <button class="nav-btn" onclick="shift(1)" aria-label="вперёд">
+                  →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="months-wrap" id="monthsWrap"></div>
+
+          <div class="info-bar" id="infoBar">Нажмите на свободную дату, чтобы начать выбор периода</div>
+
+          <div class="legend">
+            <div class="leg-item"><div class="leg-dot" style="background:#EAF3DE;border:1px solid #C0DD97"></div>Свободно</div>
+            <div class="leg-item"><div class="leg-dot" style="background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary)"></div>Занято</div>
+            <div class="leg-item"><div class="leg-dot" style="background:#185FA5"></div>Выбрано</div>
+            <div class="leg-item"><div class="leg-dot" style="background:#B5D4F4"></div>Период</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FULLSCREEN -->
+<div class="fullscreen-overlay" id="fullscreenOverlay">
+  <button class="fullscreen-close" onclick="closeFullscreen()">✕</button>
+  <img id="fullscreenImg" src="" alt="">
+</div>
+
+<!-- Admin auth popup -->
+<div class="modal-overlay" id="adminAuthOverlay">
+  <div class="modal" style="max-width: 320px;">
+    <div class="modal-header">
+      <h3>Вход в админ-панель</h3>
+      <button class="modal-close" onclick="closeAdminAuth()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom: 16px; color: var(--muted); font-size: 0.9rem;">Введите пароль для доступа к управлению объектами</p>
+      <form onsubmit="event.preventDefault(); checkAdminPassword();">
+        <input type="password" id="adminPassword" placeholder="Пароль" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 16px;">
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn-header" onclick="closeAdminAuth()" style="flex: 1;">Отмена</button>
+          <button type="submit" class="btn-header active" style="flex: 1;">Войти</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Day edit popup (admin) -->
+<div class="day-edit-popup" id="dayEditPopup">
+  <h4 id="popupDateLabel">Дата</h4>
+  <div class="popup-row">
+    <label>Цена ($)</label>
+    <input type="number" id="popupPrice" min="0">
+  </div>
+  <div class="popup-row">
+    <label>Занято</label>
+    <input type="checkbox" id="popupBusy">
+  </div>
+  <div class="popup-btns">
+    <button class="popup-cancel" onclick="closePopup()">Отмена</button>
+    <button class="popup-save" onclick="saveDay()">Сохранить</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   DATA LAYER
+   ================================================================ */
+const MONTHS_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь',
+                   'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const DAYS_RU   = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+const DEFAULT_HOUSES = [
+  {
+    id: 'h1',
+    title: 'Коттедж «Берёзовая роща»',
+    location: 'Подмосковье, Истринский р-н, 140 м²',
+    price: 150,
+    description: 'Просторный двухэтажный коттедж в окружении берёзового леса. Тёплый пол, камин, сауна — всё для идеального отдыха. До ближайшего озера пять минут пешком. В вечернее время слышно, как шумит ветер в кронах деревьев.',
+    amenities: ['Wi-Fi', 'Сауна', 'Камин', 'Парковка', 'Кухня', 'Барбекю', 'Детская площадка'],
+    photos: [
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
+      'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
+      'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80',
+      'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&q=80'
+    ],
+    calendar: {}
+  },
+  {
+    id: 'h2',
+    title: 'Дача «Тихая гавань»',
+    location: 'Карелия, Сортавала, 80 м²',
+    price: 120,
+    description: 'Уютная дача на берегу Ладожского озера. Кристально чистая вода, скалистые берега и нетронутая природа Карелии. Идеально для рыбалки и медитативного отдыха вдали от городской суеты.',
+    amenities: ['Wi-Fi', 'Лодка', 'Рыбалка', 'Кухня', 'Терраса', 'Мангал'],
+    photos: [
+      'https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?w=800&q=80',
+      'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&q=80',
+      'https://images.unsplash.com/photo-1602343168117-bb8ffe3e2e9f?w=800&q=80',
+      'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&q=80'
+    ],
+    calendar: {}
+  },
+  {
+    id: 'h3',
+    title: 'Шале «Горный ветер»',
+    location: 'Сочи, Красная Поляна, 200 м²',
+    price: 280,
+    description: 'Роскошное шале в горном стиле с панорамными видами на хребет. Большая гостиная с высокими потолками, профессиональная кухня и просторная терраса. В 15 минутах езды от горнолыжных трасс «Газпром» и «Роза Хутор».',
+    amenities: ['Wi-Fi', 'Джакузи', 'Сауна', 'Камин', 'Парковка', 'Кухня', 'Терраса', 'Тренажёрный зал'],
+    photos: [
+      'https://images.unsplash.com/photo-1542718610-a1d656d1884c?w=800&q=80',
+      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
+      'https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=800&q=80',
+      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80'
+    ],
+    calendar: {}
+  }
+];
+
+// Seed calendar for house 1 (October 2026)
+function seedCalendar1(cal) {
+  const year = 2026;
+  // Oct: busy 5-10, 15-20
+  for (let d = 1; d <= 31; d++) {
+    const key = `${year}-09-${String(d).padStart(2,'0')}`; // Oct is month index 9
+    const busy = (d >= 5 && d <= 10) || (d >= 15 && d <= 20);
+    if (busy) {
+      cal[`2026-09-${String(d).padStart(2,'0')}`] = { busy: true, price: 0 };
+    } else if (d >= 1 && d <= 31) {
+      const price = 120 + Math.floor((d * 7) % 61);
+      cal[`2026-09-${String(d).padStart(2,'0')}`] = { busy: false, price };
+    }
+  }
+  // Nov
+  for (let d = 1; d <= 30; d++) {
+    const price = 130 + Math.floor((d * 11) % 51);
+    cal[`2026-10-${String(d).padStart(2,'0')}`] = { busy: false, price };
+  }
+  return cal;
+}
+
+// Seed calendar for house 2 (November 2026, busy 12-14)
+function seedCalendar2(cal) {
+  for (let d = 1; d <= 31; d++) {
+    const price = 100 + Math.floor((d * 9) % 41);
+    cal[`2026-09-${String(d).padStart(2,'0')}`] = { busy: false, price };
+  }
+  for (let d = 1; d <= 30; d++) {
+    const busy = d >= 12 && d <= 14;
+    cal[`2026-10-${String(d).padStart(2,'0')}`] = busy ? { busy: true, price: 0 } : { busy: false, price: 100 + Math.floor((d * 13) % 51) };
+  }
+  return cal;
+}
+
+async function loadHouses() {
+  try {
+    const response = await fetch('/api/houses');
+    if (!response.ok) throw new Error('Ошибка загрузки домов');
+    const result = await response.json();
+    if (result.success) {
+      // добавляем пустой календарь к каждому дому
+      return result.data.map(house => ({ ...house, calendar: {} }));
+    } else {
+      console.error('API error:', result.error);
+      return [];
+    }
+  } catch (err) {
+    console.error('Не удалось загрузить дома:', err);
+    // fallback на демо-данные
+    return DEFAULT_HOUSES.map(h => ({ ...h, calendar: {} }));
+  }
+}
+
+function saveHouses(houses) {
+  // не используется, оставлена для совместимости
+  console.warn('saveHouses deprecated, use API directly');
+}
+
+let houses = [];
+loadHouses().then(data => {
+  console.log('Дома загружены:', data.length, 'шт.');
+  houses = data;
+  // если мы на странице каталога, перерисовываем карточки
+  if (document.getElementById('cardsGrid')) {
+    renderCards();
+  }
+});
+
+/* ================================================================
+   ADMIN AUTH
+   ================================================================ */
+let adminAuthenticated = false;
+
+function openAdminAuth() {
+  document.getElementById('adminAuthOverlay').classList.add('open');
+}
+
+function closeAdminAuth() {
+  document.getElementById('adminAuthOverlay').classList.remove('open');
+  document.getElementById('adminPassword').value = '';
+}
+
+function checkAdminPassword() {
+  const input = document.getElementById('adminPassword').value;
+  if (input === 'Толкачёва2020') {
+    adminAuthenticated = true;
+    closeAdminAuth();
+    // переключиться на админ-панель
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.btn-header').forEach(b => b.classList.remove('active'));
+    document.getElementById('viewAdmin').classList.add('active');
+    document.getElementById('btnAdmin').classList.add('active');
+    initAdmin();
+    showToast('Добро пожаловать в админ-панель');
+  } else {
+    showToast('Неверный пароль');
+  }
+}
+
+/* ================================================================
+   VIEWS
+   ================================================================ */
+function showView(name) {
+  if (name === 'admin' && !adminAuthenticated) {
+    openAdminAuth();
+    return;
+  }
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.btn-header').forEach(b => b.classList.remove('active'));
+  document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  document.getElementById('btn' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  if (name === 'catalog') renderCards();
+  if (name === 'admin') initAdmin();
+}
+
+/* ================================================================
+   CAROUSEL
+   ================================================================ */
+function initCarousel(container, photos) {
+  const track = container.querySelector('.carousel-track');
+  const dots  = container.querySelectorAll('.carousel-dot');
+  let idx = 0;
+
+  // Swipe
+  let startX = 0;
+  track.addEventListener('touchstart', e => startX = e.touches[0].clientX, { passive: true });
+  track.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 40) goTo(dx < 0 ? idx + 1 : idx - 1);
+  });
+
+  function goTo(n) {
+    idx = (n + photos.length) % photos.length;
+    track.style.transform = `translateX(-${idx * 100}%)`;
+    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+  }
+
+  container.querySelector('.prev').addEventListener('click', e => { e.stopPropagation(); goTo(idx - 1); });
+  container.querySelector('.next').addEventListener('click', e => { e.stopPropagation(); goTo(idx + 1); });
+  goTo(0);
+  return { goTo, getIdx: () => idx };
+}
+
+/* ================================================================
+   CARDS
+   ================================================================ */
+function renderCards() {
+  const grid = document.getElementById('cardsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  houses.forEach(h => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.onclick = () => openModal(h.id);
+
+    const photos = h.photos.length ? h.photos : ['https://picsum.photos/seed/' + h.id + '/800/600'];
+    const dotsHtml = photos.map((_, i) => `<span class="carousel-dot${i===0?' active':''}"></span>`).join('');
+    const imgsHtml = photos.map(p => `<img src="${p}" alt="" loading="lazy">`).join('');
+
+    card.innerHTML = `
+      <div class="carousel">
+        <div class="carousel-track">${imgsHtml}</div>
+        <button class="carousel-btn prev">&#8592;</button>
+        <button class="carousel-btn next">&#8594;</button>
+        <div class="carousel-dots">${dotsHtml}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${h.name}</div>
+        <div class="card-meta">📍 ${h.area}</div>
+        <div class="card-footer">
+          <div class="card-price">${h.base_price} ₽ <span>/ ночь</span></div>
+          <button class="btn-detail">Подробнее</button>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+    initCarousel(card.querySelector('.carousel'), photos);
+    // Обработчик кнопки "Подробнее"
+    const detailBtn = card.querySelector('.btn-detail');
+    if (detailBtn) {
+      detailBtn.addEventListener('click', (e) => {
+        console.log('Кнопка "Подробнее" нажата для дома', h.id);
+        e.stopPropagation();
+        openModal(h.id);
+      });
+    }
+  });
+}
+
+/* ================================================================
+   MODAL
+   ================================================================ */
+let modalHouseId = null;
+let modalPhotoIdx = 0;
+
+function openModal(id) {
+  console.log('openModal вызвана для id', id);
+  const h = houses.find(x => x.id === id);
+  if (!h) {
+    console.error('Дом с id', id, 'не найден в массиве houses');
+    return;
+  }
+  modalHouseId = id;
+  modalPhotoIdx = 0;
+
+  const photos = h.photos.length ? h.photos : ['https://picsum.photos/seed/' + h.id + '/800/600'];
+
+  // Gallery
+  const track = document.getElementById('modalGalleryTrack');
+  track.innerHTML = photos.map(p => `<img src="${p}" alt="">`).join('');
+  updateModalGallery();
+
+  // Info
+  document.getElementById('modalTitle').textContent = h.name;
+  document.getElementById('modalPrice').textContent = h.base_price + ' ₽';
+  document.getElementById('modalLocation').textContent = '📍 ' + h.area;
+  document.getElementById('modalDesc').textContent = h.description;
+
+  const amenWrap = document.getElementById('modalAmenities');
+  amenWrap.innerHTML = (h.amenities || []).map(a => `<span class="amenity">${a}</span>`).join('');
+
+  initCalendar(h);
+
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function updateModalGallery() {
+  const h = houses.find(x => x.id === modalHouseId);
+  const photos = h ? (h.photos.length ? h.photos : ['https://picsum.photos/seed/' + h.id + '/800/600']) : [];
+  const track = document.getElementById('modalGalleryTrack');
+  track.style.transform = `translateX(-${modalPhotoIdx * 100}%)`;
+  document.getElementById('galleryCounter').textContent = `${modalPhotoIdx + 1} / ${photos.length}`;
+}
+
+function modalGalleryNav(dir) {
+  const h = houses.find(x => x.id === modalHouseId);
+  const len = h ? (h.photos.length || 1) : 1;
+  modalPhotoIdx = (modalPhotoIdx + dir + len) % len;
+  updateModalGallery();
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ================================================================
+   FULLSCREEN
+   ================================================================ */
+function openFullscreen() {
+  const h = houses.find(x => x.id === modalHouseId);
+  if (!h) return;
+  const photos = h.photos.length ? h.photos : ['https://picsum.photos/seed/' + h.id + '/800/600'];
+  const src = photos[modalPhotoIdx] || photos[0];
+  const overlay = document.getElementById('fullscreenOverlay');
+  document.getElementById('fullscreenImg').src = src;
+  overlay.classList.add('open');
+
+  // requestFullscreen API
+  if (overlay.requestFullscreen) overlay.requestFullscreen().catch(() => {});
+  else if (overlay.webkitRequestFullscreen) overlay.webkitRequestFullscreen();
+}
+function closeFullscreen() {
+  document.getElementById('fullscreenOverlay').classList.remove('open');
+  if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+}
+
+/* ================================================================
+   CALENDAR RENDER
+   ================================================================ */
+function getCalendarMonths() {
+  const now = new Date();
+  return [
+    { year: now.getFullYear(), month: now.getMonth() },
+    { year: now.getFullYear() + (now.getMonth() === 11 ? 1 : 0),
+      month: (now.getMonth() + 1) % 12 }
+  ];
+}
+
+function calKey(year, month, day) {
+  return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
+
+function renderCalendar(containerId, house, isAdmin) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  const months = getCalendarMonths();
+  wrap.innerHTML = '';
+
+  months.forEach(({ year, month }) => {
+    const div = document.createElement('div');
+    div.className = 'calendar-month';
+    const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+    // Convert to Mon-first
+    const offset = (firstDay + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    let html = `<div class="month-title">${MONTHS_RU[month]} ${year}</div>`;
+    html += `<div class="cal-grid">`;
+    DAYS_RU.forEach(d => { html += `<div class="cal-day-name">${d}</div>`; });
+
+    for (let i = 0; i < offset; i++) html += `<div class="cal-day empty"></div>`;
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = calKey(year, month, d);
+      const entry = house.calendar[key];
+      const busy = entry ? entry.busy : false;
+      const price = entry ? entry.price : house.base_price;
+      const cls = busy ? 'busy' : 'free';
+      const inner = busy
+        ? `<span class="cal-day-num">${d}</span><span class="day-status">Занято</span>`
+        : `<span class="cal-day-num">${d}</span><span class="day-price">${price} ₽</span>`;
+
+      if (isAdmin) {
+        html += `<div class="cal-day ${cls}" 
+          data-key="${key}" data-day="${d}" data-price="${price}" data-busy="${busy}"
+          onclick="openDayEdit(this, '${house.id}', '${key}', ${price}, ${busy})">
+          ${inner}</div>`;
+      } else {
+        html += `<div class="cal-day ${cls}" 
+          onclick="dayClick('${key}', ${price}, ${busy})">${inner}</div>`;
+      }
+    }
+    html += `</div>`;
+    div.innerHTML = html;
+    wrap.appendChild(div);
+  });
+}
+
+function dayClick(key, price, busy) {
+  const parts = key.split('-');
+  const dateStr = `${parts[2]}.${String(parseInt(parts[1])+1).padStart(2,'0')}.${parts[0]}`;
+  const status = busy ? 'занято' : 'свободно';
+  const priceStr = busy ? '—' : `$${price}`;
+  console.log(`Дата ${dateStr}, цена ${priceStr}, статус: ${status}`);
+  showToast(`${dateStr} — ${status}${!busy ? ', ' + priceStr : ''}`);
+}
+
+/* ================================================================
+   ADMIN
+   ================================================================ */
+function initAdmin() {
+  const sel = document.getElementById('adminHouseSelect');
+  sel.innerHTML = '<option value="">— выберите объект —</option>';
+  houses.forEach(h => {
+    sel.innerHTML += `<option value="${h.id}">${h.name}</option>`;
+  });
+  document.getElementById('adminCalendarWrap').innerHTML = '';
+}
+
+function deleteSelectedHouse() {
+  const sel = document.getElementById('adminHouseSelect');
+  const id = sel.value;
+  if (!id) {
+    showToast('Выберите объект для удаления');
+    return;
+  }
+  if (!confirm('Вы уверены, что хотите удалить этот объект?')) return;
+  const index = houses.findIndex(h => h.id === id);
+  if (index !== -1) {
+    houses.splice(index, 1);
+    saveHouses(houses);
+    initAdmin(); // обновить список
+    renderCards(); // обновить каталог
+    showToast('Объект удалён');
+  }
+}
+
+let editingHouseId = null;
+
+function editSelectedHouse() {
+  const sel = document.getElementById('adminHouseSelect');
+  const id = sel.value;
+  if (!id) {
+    showToast('Выберите объект для редактирования');
+    return;
+  }
+  const house = houses.find(h => h.id === id);
+  if (!house) return;
+  // Заполняем форму
+  document.getElementById('newTitle').value = house.name || '';
+  document.getElementById('newLocation').value = house.area || '';
+  document.getElementById('newPrice').value = house.base_price || 150;
+  document.getElementById('newDesc').value = house.description || '';
+  document.getElementById('newAmenities').value = (house.amenities || []).join(', ');
+  document.getElementById('newPhotos').value = (house.photos || []).join('\n');
+  // Меняем кнопку
+  const btn = document.getElementById('addHouseBtn');
+  btn.textContent = 'Обновить объект';
+  btn.onclick = updateHouse;
+  editingHouseId = id;
+  showToast('Загружены данные для редактирования. Измените поля и нажмите "Обновить объект".');
+}
+
+function updateHouse() {
+  if (!editingHouseId) return;
+  const house = houses.find(h => h.id === editingHouseId);
+  if (!house) return;
+  // Обновляем данные
+  house.name = document.getElementById('newTitle').value.trim();
+  house.area = document.getElementById('newLocation').value.trim();
+  house.base_price = parseInt(document.getElementById('newPrice').value) || 150;
+  house.description = document.getElementById('newDesc').value.trim();
+  house.amenities = document.getElementById('newAmenities').value.split(',').map(s => s.trim()).filter(Boolean);
+  house.photos = document.getElementById('newPhotos').value.split('\n').map(s => s.trim()).filter(Boolean);
+  // Если фото пусто, оставляем дефолтное
+  if (house.photos.length === 0) {
+    house.photos = ['https://picsum.photos/seed/' + house.id + '/800/600'];
+  }
+  saveHouses(houses);
+  // Возвращаем кнопку в исходное состояние
+  const btn = document.getElementById('addHouseBtn');
+  btn.textContent = 'Добавить объект';
+  btn.onclick = addHouse;
+  editingHouseId = null;
+  // Обновляем интерфейс
+  initAdmin();
+  renderCards();
+  showToast('Объект обновлён');
+}
+
+function renderAdminCalendar() {
+  const id = document.getElementById('adminHouseSelect').value;
+  const wrap = document.getElementById('adminCalendarWrap');
+  if (!id) { wrap.innerHTML = ''; return; }
+  const h = houses.find(x => x.id === id);
+  // Создаём структуру календаря, идентичную модальному
+  wrap.innerHTML = `
+    <div class="cal-root">
+      <div class="cal-header">
+        <div>
+          <div class="cal-title">Управление календарём объекта</div>
+          <div class="cal-subtitle" id="adminRangeLabel">Выберите дату для редактирования</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <div class="view-toggle" id="adminViewButtons">
+            <button class="vt-btn active" onclick="adminSetView(1)">1 мес</button>
+            <button class="vt-btn" onclick="adminSetView(3)">3 мес</button>
+            <button class="vt-btn" onclick="adminSetView(6)">6 мес</button>
+          </div>
+          <div class="nav-group">
+            <button class="nav-btn" onclick="adminShiftMonths(-1)" aria-label="назад" id="adminPrevBtn">
+              ←
+            </button>
+            <div class="nav-label" id="adminNavLabel"></div>
+            <button class="nav-btn" onclick="adminShiftMonths(1)" aria-label="вперёд" id="adminNextBtn">
+              →
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="months-wrap" id="adminMonthsWrap"></div>
+      <div class="info-bar" id="adminInfoBar">Нажмите на день, чтобы изменить цену или статус занятости</div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#EAF3DE;border:1px solid #C0DD97"></div>Свободно</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary)"></div>Занято</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#185FA5"></div>Выбрано</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#B5D4F4"></div>Период</div>
+      </div>
+    </div>
+  `;
+  // Инициализируем календарь
+  initAdminCalendar(h);
+}
+
+// Глобальные переменные для админ-календаря
+let adminCAL = {};
+let adminSel1 = null;
+let adminSel2 = null;
+let adminStartOffset = 0;
+let adminViewCount = 1;
+let adminHouse = null;
+let adminBasePrice = 150;
+
+function initAdminCalendar(house) {
+  console.log('initAdminCalendar', house);
+  if (!house) return;
+  adminHouse = house;
+  // Строим объект adminCAL на основе house.calendar и house.base_price
+  const cal = {};
+  const now = new Date();
+  const basePrice = house.base_price || 150;
+  adminBasePrice = basePrice;
+  // Заполняем на 24 месяца вперед (два года) для покрытия навигации
+  for (let m = 0; m < 24; m++) {
+    const y = now.getFullYear() + Math.floor((now.getMonth() + m) / 12);
+    const mo = (now.getMonth() + m) % 12;
+    const days = new Date(y, mo + 1, 0).getDate();
+    for (let d = 1; d <= days; d++) {
+      const key = dayKey(y, mo, d);
+      const entry = house.calendar ? house.calendar[key] : null;
+      const busy = entry ? entry.busy : false;
+      const price = entry ? entry.price : basePrice;
+      cal[key] = { busy, price };
+    }
+  }
+  adminCAL = cal;
+  adminSel1 = null;
+  adminSel2 = null;
+  adminStartOffset = 0;
+  adminViewCount = 1;
+  console.log('adminCAL size', Object.keys(cal).length);
+  adminRender();
+}
+
+function adminRender() {
+  const wrap = document.getElementById('adminMonthsWrap');
+  const navLabel = document.getElementById('adminNavLabel');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  
+  const base = new Date();
+  base.setMonth(base.getMonth() + adminStartOffset);
+  const months = [];
+  for (let i = 0; i < adminViewCount; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth() });
+  }
+  
+  // Обновляем заголовок навигации
+  if (navLabel) {
+    if (adminViewCount === 1) {
+      navLabel.textContent = `${MONTHS[months[0].month]} ${months[0].year}`;
+    } else {
+      const last = months[months.length - 1];
+      navLabel.textContent = `${MONTHS_SHORT[months[0].month]} — ${MONTHS_SHORT[last.month]} ${last.year}`;
+    }
+  }
+  
+  // Активируем кнопки вида
+  document.querySelectorAll('#adminViewButtons .vt-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  const activeBtn = document.querySelector(`#adminViewButtons .vt-btn:nth-child(${adminViewCount === 3 ? 2 : adminViewCount === 6 ? 3 : 1})`);
+  if (activeBtn) activeBtn.classList.add('active');
+  
+  months.forEach(({ year, month }) => {
+    const div = document.createElement('div');
+    div.className = 'month-block';
+    
+    let html = `<div class="month-name">${MONTHS[month]} ${year}</div>`;
+    html += `<div class="month-grid">`;
+    DAYS.forEach(d => { html += `<div class="dow">${d}</div>`; });
+    
+    const first = new Date(year, month, 1).getDay();
+    const offset = (first + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    for (let i = 0; i < offset; i++) html += `<div class="day empty"></div>`;
+    
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = dayKey(year, month, d);
+      const entry = adminCAL[key];
+      const dt = new Date(year, month, d);
+      const isPast = dt < new Date();
+      
+      let cls = 'day';
+      let sub = '';
+      
+      if (!entry || isPast) {
+        cls += ' empty';
+      } else if (entry.busy) {
+        cls += ' busy';
+        sub = `<span class="day-sub">занято</span>`;
+      } else {
+        cls += ' free';
+        sub = `<span class="day-sub">${entry.price} ₽</span>`;
+      }
+      
+      // Клик для всех непустых дней (включая занятые) для отладки
+      const click = (!entry || isPast) ? '' : `onclick="adminEditDay('${key}', this)"`;
+      html += `<div class="${cls}" ${click} data-key="${key}" data-price="${entry ? entry.price : adminBasePrice}" data-busy="${entry ? entry.busy : false}">
+        <span class="day-num">${d}</span>${sub}
+      </div>`;
+    }
+    
+    html += `</div>`;
+    div.innerHTML = html;
+    wrap.appendChild(div);
+  });
+  
+  adminUpdateInfo();
+}
+
+function adminShiftMonths(delta) {
+  adminStartOffset += delta;
+  adminRender();
+}
+
+function adminSetView(count) {
+  adminViewCount = count;
+  adminRender();
+}
+
+function adminEditDay(key, element) {
+  console.log('adminEditDay called', key, element);
+  const entry = adminCAL[key];
+  if (!entry) {
+    console.log('No entry for key', key);
+    return;
+  }
+  if (!adminHouse) {
+    console.error('adminHouse not defined');
+    return;
+  }
+  const parts = key.split('-');
+  const price = entry.price;
+  const busy = entry.busy;
+  // Вызываем существующую функцию открытия попапа редактирования
+  openDayEdit(element, adminHouse.id, key, price, busy);
+}
+
+function adminUpdateInfo() {
+  const info = document.getElementById('adminInfoBar');
+  if (!info) return;
+  if (adminHouse) {
+    info.textContent = `Редактирование календаря объекта: ${adminHouse.name}. Нажмите на свободный день, чтобы изменить цену или статус.`;
+  } else {
+    info.textContent = 'Объект не выбран.';
+  }
+}
+
+function monthName(month) {
+  const names = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  return names[month];
+}
+
+/* Day edit popup */
+let popupHouseId = null;
+let popupKey = null;
+
+function openDayEdit(el, houseId, key, price, busy) {
+  console.log('openDayEdit called', { el, houseId, key, price, busy });
+  if (!el) {
+    console.error('openDayEdit: element is null');
+    return;
+  }
+  popupHouseId = houseId;
+  popupKey = key;
+  const parts = key.split('-');
+  const dateStr = `${parts[2]}.${String(parseInt(parts[1])+1).padStart(2,'0')}.${parts[0]}`;
+  document.getElementById('popupDateLabel').textContent = dateStr;
+  document.getElementById('popupPrice').value = price;
+  document.getElementById('popupBusy').checked = busy;
+
+  const popup = document.getElementById('dayEditPopup');
+  if (!popup) {
+    console.error('popup element not found');
+    return;
+  }
+  const rect = el.getBoundingClientRect();
+  popup.style.top = (window.scrollY + rect.bottom + 6) + 'px';
+  popup.style.left = Math.min(rect.left, window.innerWidth - 240) + 'px';
+  popup.classList.add('open');
+  console.log('popup opened');
+}
+
+function closePopup() {
+  document.getElementById('dayEditPopup').classList.remove('open');
+  popupHouseId = null;
+  popupKey = null;
+}
+
+function saveDay() {
+  if (!popupHouseId || !popupKey) return;
+  const price = parseInt(document.getElementById('popupPrice').value) || 0;
+  const busy  = document.getElementById('popupBusy').checked;
+
+  const h = houses.find(x => x.id === popupHouseId);
+  h.calendar[popupKey] = { busy, price };
+  saveHouses(houses);
+  closePopup();
+  renderAdminCalendar();
+  showToast('Изменения сохранены');
+}
+
+document.addEventListener('click', e => {
+  const popup = document.getElementById('dayEditPopup');
+  if (popup.classList.contains('open') && !popup.contains(e.target) && !e.target.closest('.cal-day[data-key]')) {
+    closePopup();
+  }
+});
+
+/* Add house */
+function addHouse() {
+  const title    = document.getElementById('newTitle').value.trim();
+  const location = document.getElementById('newLocation').value.trim();
+  const price    = parseInt(document.getElementById('newPrice').value) || 100;
+  const desc     = document.getElementById('newDesc').value.trim();
+  const amenStr  = document.getElementById('newAmenities').value.trim();
+  const photosStr= document.getElementById('newPhotos').value.trim();
+
+  if (!title) { showToast('Введите название объекта'); return; }
+
+  const amenities = amenStr ? amenStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const photos    = photosStr ? photosStr.split('\n').map(s => s.trim()).filter(Boolean)
+                              : ['https://picsum.photos/seed/new' + Date.now() + '/800/600'];
+
+  const newHouse = {
+    id: 'h' + Date.now(),
+    title, location, price, description: desc || 'Описание скоро появится.',
+    amenities, photos, calendar: {}
+  };
+
+  houses.push(newHouse);
+  saveHouses(houses);
+
+  // Reset form
+  ['newTitle','newLocation','newPrice','newDesc','newAmenities','newPhotos'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+
+  initAdmin();
+  showToast('Объект добавлен: ' + title);
+}
+
+/* ================================================================
+   КАЛЕНДАРЬ НА ГОД СО СТРЕЛКАМИ (из rental_calendar.html)
+   ================================================================ */
+const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONTHS_SHORT = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+const DAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+let CAL = {}; // будет заполняться данными дома
+let today = new Date();
+today.setHours(0,0,0,0);
+
+let viewCount = 1;
+let startOffset = 0;
+let sel1 = null, sel2 = null;
+
+function setView(n) {
+  viewCount = n;
+  ['btn1m','btn3m','btn6m'].forEach(id => document.getElementById(id)?.classList?.remove('active'));
+  const btn = document.getElementById(`btn${n}m`);
+  if (btn) btn.classList.add('active');
+  render();
+}
+
+function shift(d) { startOffset += d; render(); }
+
+function dayKey(y, m, d) {
+  return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function dateFromKey(k) {
+  const [y,m,d] = k.split('-').map(Number);
+  return new Date(y, m, d);
+}
+
+function clickDay(key) {
+  const entry = CAL[key];
+  if (!entry || entry.busy) return;
+  if (!sel1 || (sel1 && sel2)) {
+    sel1 = key; sel2 = null;
+  } else {
+    const d1 = dateFromKey(sel1), d2 = dateFromKey(key);
+    if (d2 < d1) { sel2 = sel1; sel1 = key; }
+    else if (d2.getTime() === d1.getTime()) { sel1 = null; }
+    else { sel2 = key; }
+  }
+  updateInfo();
+  render();
+}
+
+function updateInfo() {
+  const bar = document.getElementById('infoBar');
+  const rl = document.getElementById('rangeLabel');
+  if (!bar || !rl) return;
+  if (!sel1) {
+    bar.textContent = 'Нажмите на свободную дату, чтобы начать выбор периода';
+    bar.classList.remove('has-range');
+    rl.textContent = 'Выберите даты заезда и выезда';
+    return;
+  }
+  if (!sel2) {
+    const [y,m,d] = sel1.split('-').map(Number);
+    rl.textContent = `Заезд: ${d} ${MONTHS[m]}`;
+    bar.textContent = 'Теперь выберите дату выезда';
+    bar.classList.add('has-range');
+    return;
+  }
+  const d1 = dateFromKey(sel1), d2 = dateFromKey(sel2);
+  const nights = Math.round((d2 - d1) / 86400000);
+  let total = 0;
+  for (let i = 0; i < nights; i++) {
+    const dt = new Date(d1.getTime() + i * 86400000);
+    const k = dayKey(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    total += (CAL[k] && !CAL[k].busy) ? CAL[k].price : 0;
+  }
+  const p1 = sel1.split('-'), p2 = sel2.split('-');
+  rl.textContent = `${p1[2]} ${MONTHS_SHORT[+p1[1]]} — ${p2[2]} ${MONTHS_SHORT[+p2[1]]}`;
+  bar.innerHTML = `<b>${nights} ноч${nights===1?'ь':nights<5?'и':'ей'}</b> · итого <b>${total} ₽</b> · ср. ${Math.round(total/nights)} ₽/ночь`;
+  bar.classList.add('has-range');
+}
+
+function isInRange(key) {
+  if (!sel1 || !sel2) return false;
+  const d = dateFromKey(key), d1 = dateFromKey(sel1), d2 = dateFromKey(sel2);
+  return d > d1 && d < d2;
+}
+
+function render() {
+  const wrap = document.getElementById('monthsWrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  const base = new Date(today.getFullYear(), today.getMonth() + startOffset, 1);
+  const months = [];
+  for (let i = 0; i < viewCount; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth() });
+  }
+
+  const navLabel = document.getElementById('navLabel');
+  if (!navLabel) return;
+  if (viewCount === 1) {
+    navLabel.textContent = `${MONTHS[months[0].month]} ${months[0].year}`;
+  } else {
+    const last = months[months.length - 1];
+    navLabel.textContent = `${MONTHS_SHORT[months[0].month]} — ${MONTHS_SHORT[last.month]} ${last.year}`;
+  }
+
+  months.forEach(({ year, month }) => {
+    const div = document.createElement('div');
+    div.className = 'month-block';
+
+    let html = `<div class="month-name">${MONTHS[month]} ${year}</div>`;
+    html += `<div class="month-grid">`;
+    DAYS.forEach(d => { html += `<div class="dow">${d}</div>`; });
+
+    const first = new Date(year, month, 1).getDay();
+    const offset = (first + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 0; i < offset; i++) html += `<div class="day empty"></div>`;
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = dayKey(year, month, d);
+      const entry = CAL[key];
+      const dt = new Date(year, month, d);
+      const isTod = dt.getTime() === today.getTime();
+      const isSel = key === sel1 || key === sel2;
+      const isRange = isInRange(key);
+      const isPast = dt < today;
+
+      let cls = 'day';
+      let sub = '';
+
+      if (!entry || isPast) {
+        cls += ' empty';
+      } else if (entry.busy) {
+        cls += ' busy';
+        sub = `<span class="day-sub">занято</span>`;
+      } else {
+        cls += ' free';
+        sub = `<span class="day-sub">${entry.price} ₽</span>`;
+      }
+
+      if (isSel) cls += ' selected';
+      else if (isRange) cls += ' range';
+      if (isTod && !isPast) cls += ' today';
+
+      const click = (!entry || isPast || entry.busy) ? '' : `onclick="clickDay('${key}')"`;
+      html += `<div class="${cls}" ${click}>
+        <span class="day-num">${d}</span>${sub}
+      </div>`;
+    }
+
+    html += `</div>`;
+    div.innerHTML = html;
+    wrap.appendChild(div);
+  });
+}
+
+// Инициализация календаря для конкретного дома
+function initCalendar(house) {
+  // Строим объект CAL на основе house.calendar и house.base_price
+  const cal = {};
+  const now = new Date();
+  const basePrice = house.base_price || 150;
+  // Заполняем на год вперед
+  for (let m = 0; m < 12; m++) {
+    const y = now.getFullYear() + (now.getMonth() + m >= 12 ? 1 : 0);
+    const mo = (now.getMonth() + m) % 12;
+    const days = new Date(y, mo + 1, 0).getDate();
+    for (let d = 1; d <= days; d++) {
+      const key = dayKey(y, mo, d);
+      const entry = house.calendar ? house.calendar[key] : null;
+      const busy = entry ? entry.busy : false;
+      const price = entry ? entry.price : basePrice;
+      cal[key] = { busy, price };
+    }
+  }
+  CAL = cal;
+  // Сброс выделения
+  sel1 = null;
+  sel2 = null;
+  startOffset = 0;
+  viewCount = 1;
+  // Активируем кнопку 1 месяц
+  ['btn1m','btn3m','btn6m'].forEach(id => document.getElementById(id)?.classList?.remove('active'));
+  const btn = document.getElementById('btn1m');
+  if (btn) btn.classList.add('active');
+  // Рендер
+  render();
+  updateInfo();
+}
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+renderCards();
+</script>
+</body>
+</html>

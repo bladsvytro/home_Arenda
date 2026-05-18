@@ -1,0 +1,31 @@
+# Binaries
+*.exe
+*.bin
+*.out
+
+# Logs
+*.log
+stderr.txt
+stdout.txt
+
+# Data files (можно включить, но лучше хранить отдельно)
+data/calendar/*.json
+data/houses.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+
+# Go
+go.sum
+
+# Compiled files
+rental-server.exe

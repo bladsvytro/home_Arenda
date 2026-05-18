@@ -1,0 +1,323 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.cal-root { font-family: var(--font-sans); padding: 1rem 0; user-select: none; }
+.cal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+.cal-title { font-size: 17px; font-weight: 500; color: var(--color-text-primary); }
+.cal-subtitle { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
+.nav-group { display: flex; align-items: center; gap: 8px; }
+.nav-btn {
+  background: transparent; border: 0.5px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-md); width: 36px; height: 36px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-primary); transition: background .15s;
+  font-size: 15px;
+}
+.nav-btn:hover { background: var(--color-background-secondary); }
+.nav-label {
+  font-size: 14px; font-weight: 500; min-width: 150px; text-align: center;
+  color: var(--color-text-primary);
+}
+.months-wrap {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px 28px;
+}
+.month-block {}
+.month-name {
+  font-size: 13px; font-weight: 500; color: var(--color-text-secondary);
+  text-transform: uppercase; letter-spacing: .08em;
+  margin-bottom: 10px; text-align: center;
+}
+.month-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+}
+.dow {
+  text-align: center; font-size: 11px; color: var(--color-text-tertiary);
+  letter-spacing: .05em; padding-bottom: 4px;
+}
+.day {
+  aspect-ratio: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  border-radius: var(--border-radius-md); cursor: pointer;
+  transition: background .12s, transform .1s;
+  font-size: 12px; position: relative;
+}
+.day:hover { transform: scale(1.1); }
+.day.empty { cursor: default; pointer-events: none; }
+.day.empty:hover { transform: none; }
+.day-num { font-size: 13px; font-weight: 500; line-height: 1; }
+.day-sub { font-size: 9.5px; line-height: 1; margin-top: 1px; }
+
+.day.free { background: #EAF3DE; }
+.day.free .day-num { color: #27500A; }
+.day.free .day-sub { color: #3B6D11; }
+.day.free:hover { background: #C0DD97; }
+
+.day.busy { background: var(--color-background-secondary); cursor: not-allowed; }
+.day.busy:hover { transform: none; }
+.day.busy .day-num { color: var(--color-text-tertiary); }
+.day.busy .day-sub { color: var(--color-text-tertiary); }
+
+.day.today { outline: 2px solid #378ADD; outline-offset: -2px; }
+.day.today .day-num { color: #0C447C; }
+
+.day.selected { background: #185FA5 !important; outline: none; }
+.day.selected .day-num { color: #E6F1FB !important; }
+.day.selected .day-sub { color: #B5D4F4 !important; }
+
+.day.range { background: #B5D4F4; }
+.day.range .day-num { color: #042C53; }
+.day.range .day-sub { color: #185FA5; }
+
+.legend {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  margin-top: 20px; padding-top: 16px;
+  border-top: 0.5px solid var(--color-border-tertiary);
+  font-size: 12px; color: var(--color-text-secondary);
+}
+.leg-item { display: flex; align-items: center; gap: 6px; }
+.leg-dot { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+
+.info-bar {
+  margin-top: 16px; padding: 12px 14px;
+  background: var(--color-background-secondary);
+  border-radius: var(--border-radius-md);
+  font-size: 13px; color: var(--color-text-secondary);
+  min-height: 40px; transition: all .2s;
+}
+.info-bar.has-range { color: var(--color-text-primary); }
+.info-bar b { font-weight: 500; }
+
+.view-toggle {
+  display: flex; gap: 4px; background: var(--color-background-secondary);
+  border-radius: var(--border-radius-md); padding: 3px;
+}
+.vt-btn {
+  border: none; background: transparent; cursor: pointer;
+  border-radius: 6px; padding: 4px 10px; font-size: 12px;
+  color: var(--color-text-secondary); transition: all .15s;
+}
+.vt-btn.active {
+  background: var(--color-background-primary);
+  color: var(--color-text-primary); font-weight: 500;
+  border: 0.5px solid var(--color-border-tertiary);
+}
+</style>
+
+<div class="cal-root" id="root">
+  <h2 class="sr-only">Интерактивный календарь аренды с навигацией по месяцам</h2>
+
+  <div class="cal-header">
+    <div>
+      <div class="cal-title">Доступность и цены</div>
+      <div class="cal-subtitle" id="rangeLabel">Выберите даты заезда и выезда</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div class="view-toggle">
+        <button class="vt-btn active" id="btn1m" onclick="setView(1)">1 мес</button>
+        <button class="vt-btn" id="btn3m" onclick="setView(3)">3 мес</button>
+        <button class="vt-btn" id="btn6m" onclick="setView(6)">6 мес</button>
+      </div>
+      <div class="nav-group">
+        <button class="nav-btn" onclick="shift(-1)" aria-label="назад">
+          <i class="ti ti-chevron-left" aria-hidden="true"></i>
+        </button>
+        <div class="nav-label" id="navLabel"></div>
+        <button class="nav-btn" onclick="shift(1)" aria-label="вперёд">
+          <i class="ti ti-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="months-wrap" id="monthsWrap"></div>
+
+  <div class="info-bar" id="infoBar">Нажмите на свободную дату, чтобы начать выбор периода</div>
+
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#EAF3DE;border:1px solid #C0DD97"></div>Свободно</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary)"></div>Занято</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#185FA5"></div>Выбрано</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#B5D4F4"></div>Период</div>
+  </div>
+</div>
+
+<script>
+const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONTHS_SHORT = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+const DAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+const BASE_PRICE = 150;
+
+function buildCalendar() {
+  const cal = {};
+  const now = new Date();
+  for (let m = 0; m < 12; m++) {
+    const y = now.getFullYear() + (now.getMonth() + m >= 12 ? 1 : 0);
+    const mo = (now.getMonth() + m) % 12;
+    const days = new Date(y, mo + 1, 0).getDate();
+    for (let d = 1; d <= days; d++) {
+      const key = `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const busy = (mo === 9 && y === 2026 && ((d >= 5 && d <= 10) || (d >= 15 && d <= 20)))
+                || (mo === 10 && y === 2026 && d >= 12 && d <= 14);
+      const price = busy ? 0 : BASE_PRICE + Math.floor(Math.sin(d * mo + 1) * 40 + 40);
+      cal[key] = { busy, price };
+    }
+  }
+  return cal;
+}
+
+const CAL = buildCalendar();
+const today = new Date();
+today.setHours(0,0,0,0);
+
+let viewCount = 1;
+let startOffset = 0;
+let sel1 = null, sel2 = null;
+
+function setView(n) {
+  viewCount = n;
+  ['btn1m','btn3m','btn6m'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById(`btn${n}m`).classList.add('active');
+  render();
+}
+
+function shift(d) { startOffset += d; render(); }
+
+function dayKey(y, m, d) {
+  return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function dateFromKey(k) {
+  const [y,m,d] = k.split('-').map(Number);
+  return new Date(y, m, d);
+}
+
+function clickDay(key) {
+  const entry = CAL[key];
+  if (!entry || entry.busy) return;
+  if (!sel1 || (sel1 && sel2)) {
+    sel1 = key; sel2 = null;
+  } else {
+    const d1 = dateFromKey(sel1), d2 = dateFromKey(key);
+    if (d2 < d1) { sel2 = sel1; sel1 = key; }
+    else if (d2.getTime() === d1.getTime()) { sel1 = null; }
+    else { sel2 = key; }
+  }
+  updateInfo();
+  render();
+}
+
+function updateInfo() {
+  const bar = document.getElementById('infoBar');
+  const rl = document.getElementById('rangeLabel');
+  if (!sel1) {
+    bar.textContent = 'Нажмите на свободную дату, чтобы начать выбор периода';
+    bar.classList.remove('has-range');
+    rl.textContent = 'Выберите даты заезда и выезда';
+    return;
+  }
+  if (!sel2) {
+    const [y,m,d] = sel1.split('-').map(Number);
+    rl.textContent = `Заезд: ${d} ${MONTHS[m]}`;
+    bar.textContent = 'Теперь выберите дату выезда';
+    bar.classList.add('has-range');
+    return;
+  }
+  const d1 = dateFromKey(sel1), d2 = dateFromKey(sel2);
+  const nights = Math.round((d2 - d1) / 86400000);
+  let total = 0;
+  for (let i = 0; i < nights; i++) {
+    const dt = new Date(d1.getTime() + i * 86400000);
+    const k = dayKey(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    total += (CAL[k] && !CAL[k].busy) ? CAL[k].price : 0;
+  }
+  const p1 = sel1.split('-'), p2 = sel2.split('-');
+  rl.textContent = `${p1[2]} ${MONTHS_SHORT[+p1[1]]} — ${p2[2]} ${MONTHS_SHORT[+p2[1]]}`;
+  bar.innerHTML = `<b>${nights} ноч${nights===1?'ь':nights<5?'и':'ей'}</b> · итого <b>$${total}</b> · ср. $${Math.round(total/nights)}/ночь`;
+  bar.classList.add('has-range');
+}
+
+function isInRange(key) {
+  if (!sel1 || !sel2) return false;
+  const d = dateFromKey(key), d1 = dateFromKey(sel1), d2 = dateFromKey(sel2);
+  return d > d1 && d < d2;
+}
+
+function render() {
+  const wrap = document.getElementById('monthsWrap');
+  wrap.innerHTML = '';
+
+  const base = new Date(today.getFullYear(), today.getMonth() + startOffset, 1);
+  const months = [];
+  for (let i = 0; i < viewCount; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth() });
+  }
+
+  const navLabel = document.getElementById('navLabel');
+  if (viewCount === 1) {
+    navLabel.textContent = `${MONTHS[months[0].month]} ${months[0].year}`;
+  } else {
+    const last = months[months.length - 1];
+    navLabel.textContent = `${MONTHS_SHORT[months[0].month]} — ${MONTHS_SHORT[last.month]} ${last.year}`;
+  }
+
+  months.forEach(({ year, month }) => {
+    const div = document.createElement('div');
+    div.className = 'month-block';
+
+    let html = `<div class="month-name">${MONTHS[month]} ${year}</div>`;
+    html += `<div class="month-grid">`;
+    DAYS.forEach(d => { html += `<div class="dow">${d}</div>`; });
+
+    const first = new Date(year, month, 1).getDay();
+    const offset = (first + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 0; i < offset; i++) html += `<div class="day empty"></div>`;
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = dayKey(year, month, d);
+      const entry = CAL[key];
+      const dt = new Date(year, month, d);
+      const isTod = dt.getTime() === today.getTime();
+      const isSel = key === sel1 || key === sel2;
+      const isRange = isInRange(key);
+      const isPast = dt < today;
+
+      let cls = 'day';
+      let sub = '';
+
+      if (!entry || isPast) {
+        cls += ' empty';
+      } else if (entry.busy) {
+        cls += ' busy';
+        sub = `<span class="day-sub">занято</span>`;
+      } else {
+        cls += ' free';
+        sub = `<span class="day-sub">$${entry.price}</span>`;
+      }
+
+      if (isSel) cls += ' selected';
+      else if (isRange) cls += ' range';
+      if (isTod && !isPast) cls += ' today';
+
+      const click = (!entry || isPast || entry.busy) ? '' : `onclick="clickDay('${key}')"`;
+      html += `<div class="${cls}" ${click}>
+        <span class="day-num">${d}</span>${sub}
+      </div>`;
+    }
+
+    html += `</div>`;
+    div.innerHTML = html;
+    wrap.appendChild(div);
+  });
+}
+
+render();
+updateInfo();
+</script>
