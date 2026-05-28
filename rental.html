@@ -1695,25 +1695,43 @@ function render() {
   });
 }
 
-// Инициализация календаря для конкретного дома
-function initCalendar(house) {
-  // Строим объект CAL на основе house.calendar и house.base_price
-  const cal = {};
+// Инициализация календаря для конкретного дома — загружает данные через API
+async function initCalendar(house) {
   const now = new Date();
   const basePrice = house.base_price || 150;
-  // Заполняем на год вперед
-  for (let m = 0; m < 12; m++) {
-    const y = now.getFullYear() + (now.getMonth() + m >= 12 ? 1 : 0);
+
+  // Строим базовый календарь на 24 месяца с ценами по умолчанию
+  const cal = {};
+  for (let m = 0; m < 24; m++) {
+    const y = now.getFullYear() + Math.floor((now.getMonth() + m) / 12);
     const mo = (now.getMonth() + m) % 12;
     const days = new Date(y, mo + 1, 0).getDate();
     for (let d = 1; d <= days; d++) {
       const key = dayKey(y, mo, d);
-      const entry = house.calendar ? house.calendar[key] : null;
-      const busy = entry ? entry.busy : false;
-      const price = entry ? entry.price : basePrice;
-      cal[key] = { busy, price };
+      cal[key] = { busy: false, price: basePrice };
     }
   }
+
+  // Загружаем актуальные данные с сервера через API
+  const from = dayKey(now.getFullYear(), now.getMonth(), 1);
+  const endD = new Date(now.getFullYear() + 2, now.getMonth(), 0);
+  const to   = dayKey(endD.getFullYear(), endD.getMonth(), endD.getDate());
+  try {
+    const resp = await fetch(`/api/calendar_range/${house.id}?from=${from}&to=${to}`);
+    if (resp.ok) {
+      const result = await resp.json();
+      if (result.success && Array.isArray(result.data)) {
+        result.data.forEach(e => {
+          if (cal[e.date] !== undefined) {
+            cal[e.date] = { busy: e.is_booked, price: e.price };
+          }
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('Calendar load error:', err);
+  }
+
   CAL = cal;
   // Сброс выделения
   sel1 = null;
