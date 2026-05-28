@@ -397,28 +397,52 @@
   }
   .btn-secondary:hover { border-color: var(--ink); }
 
-  /* Admin calendar day edit popup */
-  .day-edit-popup {
-    display: none; position: fixed; z-index: 2000;
-    background: var(--cream); border: 1px solid var(--border);
-    border-radius: 8px; padding: 20px; box-shadow: 0 8px 32px var(--shadow);
-    min-width: 220px;
+  /* Admin calendar — inline action panel */
+  .admin-action-panel {
+    display: none; margin-top: 20px; padding: 18px 20px;
+    background: var(--card-bg); border: 1.5px solid var(--warm);
+    border-radius: 8px; animation: aapIn .18s ease;
   }
-  .day-edit-popup.open { display: block; }
-  .day-edit-popup h4 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.1rem; margin-bottom: 14px;
+  @keyframes aapIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+  .aap-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; flex-wrap: wrap; gap: 8px;
   }
-  .popup-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .popup-row label { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
-  .popup-row input[type="number"] { width: 100%; }
-  .popup-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--rust); }
-  .popup-btns { display: flex; gap: 8px; margin-top: 16px; }
-  .popup-btns button { flex: 1; padding: 9px 0; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; border-radius: 4px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-  .popup-save { background: var(--ink); color: var(--cream); border: none; transition: background 0.2s; }
-  .popup-save:hover { background: var(--rust); }
-  .popup-cancel { background: transparent; color: var(--muted); border: 1px solid var(--border); transition: border-color 0.2s; }
-  .popup-cancel:hover { border-color: var(--ink); color: var(--ink); }
+  .aap-range-label { font-size: .9rem; font-weight: 500; color: var(--ink); }
+  .aap-clear {
+    background: transparent; border: none; color: var(--muted);
+    cursor: pointer; font-size: .75rem; text-transform: uppercase;
+    letter-spacing: .06em; padding: 5px 10px; border-radius: 4px;
+    transition: color .2s; white-space: nowrap;
+  }
+  .aap-clear:hover { color: var(--rust); }
+  .aap-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .aap-btn {
+    padding: 8px 18px; border-radius: 4px; cursor: pointer; white-space: nowrap;
+    font-family: 'DM Sans', sans-serif; font-size: .78rem;
+    letter-spacing: .06em; text-transform: uppercase; transition: all .2s;
+  }
+  .aap-btn-busy  { background: #FDECEA; color: #9b2020; border: 1px solid #f5c2c2; }
+  .aap-btn-busy:hover  { background: #f5c2c2; }
+  .aap-btn-free  { background: #EAF3DE; color: #27500A; border: 1px solid #C0DD97; }
+  .aap-btn-free:hover  { background: #C0DD97; }
+  .aap-price-group { display: flex; gap: 8px; align-items: center; }
+  .aap-price-group input { width: 110px; }
+  .aap-btn-price { background: var(--warm); color: var(--ink); border: 1px solid var(--warm); }
+  .aap-btn-price:hover { background: #b08450; border-color: #b08450; }
+  .aap-status { font-size: .8rem; color: var(--muted); margin-top: 10px; min-height: 18px; }
+
+  /* Admin calendar colour overrides */
+  .admin-cal .day.busy { background: #FDECEA; cursor: pointer; }
+  .admin-cal .day.busy:hover { background: #f5c2c2; transform: scale(1.05); }
+  .admin-cal .day.busy .day-num { color: #7B2B2B; }
+  .admin-cal .day.busy .day-sub { color: #9b2020; }
+  .admin-cal .day.admin-selected { background: var(--warm) !important; outline: none; }
+  .admin-cal .day.admin-selected .day-num { color: var(--ink) !important; }
+  .admin-cal .day.admin-selected .day-sub { color: rgba(26,23,16,.7) !important; }
+  .admin-cal .day.admin-range { background: rgba(200,169,126,.3); }
+  .admin-cal .day.admin-range .day-num { color: var(--ink); }
+  .admin-cal .day.admin-range .day-sub { color: var(--muted); }
 
   /* Fullscreen photo */
   .fullscreen-overlay {
@@ -737,22 +761,7 @@
   </div>
 </div>
 
-<!-- Day edit popup (admin) -->
-<div class="day-edit-popup" id="dayEditPopup">
-  <h4 id="popupDateLabel">Дата</h4>
-  <div class="popup-row">
-    <label>Цена ($)</label>
-    <input type="number" id="popupPrice" min="0">
-  </div>
-  <div class="popup-row">
-    <label>Занято</label>
-    <input type="checkbox" id="popupBusy">
-  </div>
-  <div class="popup-btns">
-    <button class="popup-cancel" onclick="closePopup()">Отмена</button>
-    <button class="popup-save" onclick="saveDay()">Сохранить</button>
-  </div>
-</div>
+<!-- (day-edit-popup removed — inline action panel used instead) -->
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
@@ -1087,75 +1096,8 @@ function closeFullscreen() {
 }
 
 /* ================================================================
-   CALENDAR RENDER
+   CALENDAR RENDER  (modal — uses initCalendar below)
    ================================================================ */
-function getCalendarMonths() {
-  const now = new Date();
-  return [
-    { year: now.getFullYear(), month: now.getMonth() },
-    { year: now.getFullYear() + (now.getMonth() === 11 ? 1 : 0),
-      month: (now.getMonth() + 1) % 12 }
-  ];
-}
-
-function calKey(year, month, day) {
-  return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-}
-
-function renderCalendar(containerId, house, isAdmin) {
-  const wrap = document.getElementById(containerId);
-  if (!wrap) return;
-  const months = getCalendarMonths();
-  wrap.innerHTML = '';
-
-  months.forEach(({ year, month }) => {
-    const div = document.createElement('div');
-    div.className = 'calendar-month';
-    const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
-    // Convert to Mon-first
-    const offset = (firstDay + 6) % 7;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    let html = `<div class="month-title">${MONTHS_RU[month]} ${year}</div>`;
-    html += `<div class="cal-grid">`;
-    DAYS_RU.forEach(d => { html += `<div class="cal-day-name">${d}</div>`; });
-
-    for (let i = 0; i < offset; i++) html += `<div class="cal-day empty"></div>`;
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const key = calKey(year, month, d);
-      const entry = house.calendar[key];
-      const busy = entry ? entry.busy : false;
-      const price = entry ? entry.price : house.base_price;
-      const cls = busy ? 'busy' : 'free';
-      const inner = busy
-        ? `<span class="cal-day-num">${d}</span><span class="day-status">Занято</span>`
-        : `<span class="cal-day-num">${d}</span><span class="day-price">${price} ₽</span>`;
-
-      if (isAdmin) {
-        html += `<div class="cal-day ${cls}" 
-          data-key="${key}" data-day="${d}" data-price="${price}" data-busy="${busy}"
-          onclick="openDayEdit(this, '${house.id}', '${key}', ${price}, ${busy})">
-          ${inner}</div>`;
-      } else {
-        html += `<div class="cal-day ${cls}" 
-          onclick="dayClick('${key}', ${price}, ${busy})">${inner}</div>`;
-      }
-    }
-    html += `</div>`;
-    div.innerHTML = html;
-    wrap.appendChild(div);
-  });
-}
-
-function dayClick(key, price, busy) {
-  const parts = key.split('-');
-  const dateStr = `${parts[2]}.${String(parseInt(parts[1])+1).padStart(2,'0')}.${parts[0]}`;
-  const status = busy ? 'занято' : 'свободно';
-  const priceStr = busy ? '—' : `$${price}`;
-  console.log(`Дата ${dateStr}, цена ${priceStr}, статус: ${status}`);
-  showToast(`${dateStr} — ${status}${!busy ? ', ' + priceStr : ''}`);
-}
 
 /* ================================================================
    ADMIN
@@ -1241,266 +1183,344 @@ function updateHouse() {
 }
 
 function renderAdminCalendar() {
-  const id = document.getElementById('adminHouseSelect').value;
+  const id   = document.getElementById('adminHouseSelect').value;
   const wrap = document.getElementById('adminCalendarWrap');
   if (!id) { wrap.innerHTML = ''; return; }
   const h = houses.find(x => x.id === id);
-  // Создаём структуру календаря, идентичную модальному
+  if (!h) { wrap.innerHTML = ''; return; }
+
   wrap.innerHTML = `
-    <div class="cal-root">
+    <div class="cal-root admin-cal" id="adminCalRoot">
       <div class="cal-header">
         <div>
-          <div class="cal-title">Управление календарём объекта</div>
-          <div class="cal-subtitle" id="adminRangeLabel">Выберите дату для редактирования</div>
+          <div class="cal-title">Расписание объекта</div>
+          <div class="cal-subtitle">Кликните по дню — или выберите диапазон двумя кликами</div>
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <div class="view-toggle" id="adminViewButtons">
-            <button class="vt-btn active" onclick="adminSetView(1)">1 мес</button>
+          <div class="view-toggle" id="adminViewToggle">
+            <button class="vt-btn" onclick="adminSetView(1)">1 мес</button>
+            <button class="vt-btn active" onclick="adminSetView(2)">2 мес</button>
             <button class="vt-btn" onclick="adminSetView(3)">3 мес</button>
-            <button class="vt-btn" onclick="adminSetView(6)">6 мес</button>
           </div>
           <div class="nav-group">
-            <button class="nav-btn" onclick="adminShiftMonths(-1)" aria-label="назад" id="adminPrevBtn">
-              ←
-            </button>
-            <div class="nav-label" id="adminNavLabel"></div>
-            <button class="nav-btn" onclick="adminShiftMonths(1)" aria-label="вперёд" id="adminNextBtn">
-              →
-            </button>
+            <button class="nav-btn" onclick="adminShiftMonths(-1)" aria-label="назад">←</button>
+            <div class="nav-label" id="adminNavLabel" style="min-width:220px;"></div>
+            <button class="nav-btn" onclick="adminShiftMonths(1)" aria-label="вперёд">→</button>
           </div>
         </div>
       </div>
       <div class="months-wrap" id="adminMonthsWrap"></div>
-      <div class="info-bar" id="adminInfoBar">Нажмите на день, чтобы изменить цену или статус занятости</div>
-      <div class="legend">
+      <div class="admin-action-panel" id="adminActionPanel">
+        <div class="aap-header">
+          <div class="aap-range-label" id="aapRangeLabel">—</div>
+          <button class="aap-clear" onclick="adminClearSel()">✕ Снять выбор</button>
+        </div>
+        <div class="aap-actions">
+          <button class="aap-btn aap-btn-busy" onclick="adminApply('busy')">● Занять</button>
+          <button class="aap-btn aap-btn-free" onclick="adminApply('free')">✓ Освободить</button>
+          <div class="aap-price-group">
+            <input type="number" id="aapPrice" placeholder="Цена (₽)" min="0">
+            <button class="aap-btn aap-btn-price" onclick="adminApply('price')">Применить цену</button>
+          </div>
+        </div>
+        <div class="aap-status" id="aapStatus"></div>
+      </div>
+      <div class="legend" style="margin-top:20px;">
         <div class="leg-item"><div class="leg-dot" style="background:#EAF3DE;border:1px solid #C0DD97"></div>Свободно</div>
-        <div class="leg-item"><div class="leg-dot" style="background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary)"></div>Занято</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#185FA5"></div>Выбрано</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#B5D4F4"></div>Период</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#FDECEA;border:1px solid #f5c2c2"></div>Занято</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--warm)"></div>Выбрано / диапазон</div>
       </div>
     </div>
   `;
-  // Инициализируем календарь
   initAdminCalendar(h);
 }
 
-// Глобальные переменные для админ-календаря
-let adminCAL = {};
-let adminSel1 = null;
-let adminSel2 = null;
-let adminStartOffset = 0;
-let adminViewCount = 1;
-let adminHouse = null;
-let adminBasePrice = 150;
+/* ================================================================
+   ADMIN CALENDAR — redesigned
+   ================================================================ */
 
-function initAdminCalendar(house) {
-  console.log('initAdminCalendar', house);
+// State
+let adminCAL         = {};
+let adminSel         = { start: null, end: null };
+let adminStartOffset = 0;
+let adminViewCount   = 2;
+let adminHouse       = null;
+let adminBasePrice   = 150;
+let adminSaving      = false;
+
+/* Helpers */
+function adminDayKey(y, m, d) {
+  return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+function adminDateFromKey(k) {
+  const [y, m, d] = k.split('-').map(Number);
+  return new Date(y, m, d);
+}
+
+/* Init: load calendar from API and render */
+async function initAdminCalendar(house) {
   if (!house) return;
-  adminHouse = house;
-  // Строим объект adminCAL на основе house.calendar и house.base_price
-  const cal = {};
+  adminHouse      = house;
+  adminBasePrice  = house.base_price || 150;
+  adminSel        = { start: null, end: null };
+  adminStartOffset = 0;
+  adminViewCount  = 2;
+
+  // Pre-fill defaults for 24 months ahead
   const now = new Date();
-  const basePrice = house.base_price || 150;
-  adminBasePrice = basePrice;
-  // Заполняем на 24 месяца вперед (два года) для покрытия навигации
+  const cal = {};
   for (let m = 0; m < 24; m++) {
-    const y = now.getFullYear() + Math.floor((now.getMonth() + m) / 12);
+    const y  = now.getFullYear() + Math.floor((now.getMonth() + m) / 12);
     const mo = (now.getMonth() + m) % 12;
     const days = new Date(y, mo + 1, 0).getDate();
     for (let d = 1; d <= days; d++) {
-      const key = dayKey(y, mo, d);
-      const entry = house.calendar ? house.calendar[key] : null;
-      const busy = entry ? entry.busy : false;
-      const price = entry ? entry.price : basePrice;
-      cal[key] = { busy, price };
+      cal[adminDayKey(y, mo, d)] = { busy: false, price: adminBasePrice };
     }
   }
+
+  // Fetch from API (calendar_range uses same 0-indexed month keys)
+  const from = adminDayKey(now.getFullYear(), now.getMonth(), 1);
+  const endD = new Date(now.getFullYear() + 2, now.getMonth(), 0);
+  const to   = adminDayKey(endD.getFullYear(), endD.getMonth(), endD.getDate());
+  try {
+    const resp = await fetch(`/api/calendar_range/${house.id}?from=${from}&to=${to}`);
+    if (resp.ok) {
+      const result = await resp.json();
+      if (result.success && Array.isArray(result.data)) {
+        result.data.forEach(e => {
+          if (cal[e.date] !== undefined) {
+            cal[e.date] = { busy: e.is_booked, price: e.price };
+          }
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('Calendar load error:', err);
+  }
+
   adminCAL = cal;
-  adminSel1 = null;
-  adminSel2 = null;
-  adminStartOffset = 0;
-  adminViewCount = 1;
-  console.log('adminCAL size', Object.keys(cal).length);
   adminRender();
 }
 
+/* Render months */
 function adminRender() {
-  const wrap = document.getElementById('adminMonthsWrap');
+  const wrap     = document.getElementById('adminMonthsWrap');
   const navLabel = document.getElementById('adminNavLabel');
   if (!wrap) return;
   wrap.innerHTML = '';
-  
-  const base = new Date();
-  base.setMonth(base.getMonth() + adminStartOffset);
+
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+
+  const base = new Date(todayMidnight.getFullYear(), todayMidnight.getMonth() + adminStartOffset, 1);
   const months = [];
   for (let i = 0; i < adminViewCount; i++) {
     const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
     months.push({ year: d.getFullYear(), month: d.getMonth() });
   }
-  
-  // Обновляем заголовок навигации
+
   if (navLabel) {
-    if (adminViewCount === 1) {
-      navLabel.textContent = `${MONTHS[months[0].month]} ${months[0].year}`;
-    } else {
-      const last = months[months.length - 1];
-      navLabel.textContent = `${MONTHS_SHORT[months[0].month]} — ${MONTHS_SHORT[last.month]} ${last.year}`;
-    }
+    const f = months[0], l = months[months.length - 1];
+    navLabel.textContent = adminViewCount === 1
+      ? `${MONTHS_RU[f.month]} ${f.year}`
+      : `${MONTHS_RU[f.month]} ${f.year} — ${MONTHS_RU[l.month]} ${l.year}`;
   }
-  
-  // Активируем кнопки вида
-  document.querySelectorAll('#adminViewButtons .vt-btn').forEach(btn => {
-    btn.classList.remove('active');
+
+  // View-toggle active state
+  document.querySelectorAll('#adminViewToggle .vt-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', [1, 2, 3][i] === adminViewCount);
   });
-  const activeBtn = document.querySelector(`#adminViewButtons .vt-btn:nth-child(${adminViewCount === 3 ? 2 : adminViewCount === 6 ? 3 : 1})`);
-  if (activeBtn) activeBtn.classList.add('active');
-  
+
+  // Ordered range for highlighting
+  let rFrom = null, rTo = null;
+  if (adminSel.start && adminSel.end) {
+    const d1 = adminDateFromKey(adminSel.start);
+    const d2 = adminDateFromKey(adminSel.end);
+    rFrom = d1 <= d2 ? adminSel.start : adminSel.end;
+    rTo   = d1 <= d2 ? adminSel.end   : adminSel.start;
+  }
+
   months.forEach(({ year, month }) => {
     const div = document.createElement('div');
     div.className = 'month-block';
-    
-    let html = `<div class="month-name">${MONTHS[month]} ${year}</div>`;
+
+    let html = `<div class="month-name">${MONTHS_RU[month]} ${year}</div>`;
     html += `<div class="month-grid">`;
-    DAYS.forEach(d => { html += `<div class="dow">${d}</div>`; });
-    
-    const first = new Date(year, month, 1).getDay();
-    const offset = (first + 6) % 7;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
+    DAYS_RU.forEach(d => { html += `<div class="dow">${d}</div>`; });
+
+    const first    = new Date(year, month, 1).getDay();
+    const offset   = (first + 6) % 7;
+    const daysInMo = new Date(year, month + 1, 0).getDate();
+
     for (let i = 0; i < offset; i++) html += `<div class="day empty"></div>`;
-    
-    for (let d = 1; d <= daysInMonth; d++) {
-      const key = dayKey(year, month, d);
+
+    for (let d = 1; d <= daysInMo; d++) {
+      const key   = adminDayKey(year, month, d);
       const entry = adminCAL[key];
-      const dt = new Date(year, month, d);
-      const isPast = dt < new Date();
-      
-      let cls = 'day';
-      let sub = '';
-      
-      if (!entry || isPast) {
+      const dt    = new Date(year, month, d);
+      dt.setHours(0, 0, 0, 0);
+      const isPast  = dt < todayMidnight;
+      const isToday = dt.getTime() === todayMidnight.getTime();
+
+      const isSel   = key === adminSel.start || key === adminSel.end;
+      const isRange = rFrom && rTo && !isSel && key > rFrom && key < rTo;
+
+      let cls = 'day', sub = '';
+
+      if (isPast) {
         cls += ' empty';
+        if (entry) sub = entry.busy
+          ? `<span class="day-sub">занято</span>`
+          : `<span class="day-sub">${entry.price}₽</span>`;
+      } else if (!entry) {
+        cls += ' free';
+        sub = `<span class="day-sub">${adminBasePrice}₽</span>`;
       } else if (entry.busy) {
         cls += ' busy';
         sub = `<span class="day-sub">занято</span>`;
       } else {
         cls += ' free';
-        sub = `<span class="day-sub">${entry.price} ₽</span>`;
+        sub = `<span class="day-sub">${entry.price}₽</span>`;
       }
-      
-      // Клик для всех непустых дней (включая занятые) для отладки
-      const click = (!entry || isPast) ? '' : `onclick="adminEditDay('${key}', this)"`;
-      html += `<div class="${cls}" ${click} data-key="${key}" data-price="${entry ? entry.price : adminBasePrice}" data-busy="${entry ? entry.busy : false}">
-        <span class="day-num">${d}</span>${sub}
-      </div>`;
+
+      if (isSel)        cls += ' admin-selected';
+      else if (isRange) cls += ' admin-range';
+      if (isToday)      cls += ' today';
+
+      const click = isPast ? '' : `onclick="adminClickDay('${key}')"`;
+      html += `<div class="${cls}" ${click}><span class="day-num">${d}</span>${sub}</div>`;
     }
-    
+
     html += `</div>`;
     div.innerHTML = html;
     wrap.appendChild(div);
   });
-  
-  adminUpdateInfo();
+
+  adminUpdatePanel();
+}
+
+/* Click handler — first click = start, second = end, third = reset */
+function adminClickDay(key) {
+  if (!adminSel.start || (adminSel.start && adminSel.end)) {
+    adminSel = { start: key, end: null };
+  } else if (key === adminSel.start) {
+    adminSel = { start: null, end: null };
+  } else {
+    adminSel.end = key;
+  }
+  adminRender();
+}
+
+function adminClearSel() {
+  adminSel = { start: null, end: null };
+  adminRender();
+}
+
+/* Update the inline action panel */
+function adminUpdatePanel() {
+  const panel  = document.getElementById('adminActionPanel');
+  const label  = document.getElementById('aapRangeLabel');
+  const status = document.getElementById('aapStatus');
+  if (!panel) return;
+
+  if (!adminSel.start) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  if (status) status.textContent = '';
+
+  if (!adminSel.end) {
+    const [y, m, d] = adminSel.start.split('-').map(Number);
+    label.textContent = `Выбран: ${d} ${MONTHS_RU[m]} ${y}`;
+  } else {
+    const keys = adminGetSelectedKeys();
+    const cnt  = keys.length;
+    const d1 = adminDateFromKey(adminSel.start);
+    const d2 = adminDateFromKey(adminSel.end);
+    const from = (d1 <= d2 ? adminSel.start : adminSel.end).split('-').map(Number);
+    const to   = (d1 <= d2 ? adminSel.end   : adminSel.start).split('-').map(Number);
+    const noun = cnt === 1 ? 'день' : cnt < 5 ? 'дня' : 'дней';
+    label.textContent =
+      `Период: ${from[2]} ${MONTHS_RU[from[1]]} — ${to[2]} ${MONTHS_RU[to[1]]} ${to[0]} · ${cnt} ${noun}`;
+  }
+}
+
+/* Collect all keys in the selected range */
+function adminGetSelectedKeys() {
+  if (!adminSel.start) return [];
+  if (!adminSel.end)   return [adminSel.start];
+  const d1 = adminDateFromKey(adminSel.start);
+  const d2 = adminDateFromKey(adminSel.end);
+  const start = d1 <= d2 ? new Date(d1) : new Date(d2);
+  const end   = d1 <= d2 ? new Date(d2) : new Date(d1);
+  const keys  = [];
+  for (const cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
+    keys.push(adminDayKey(cur.getFullYear(), cur.getMonth(), cur.getDate()));
+  }
+  return keys;
+}
+
+/* Apply action to selected range and save via API */
+async function adminApply(action) {
+  if (!adminHouse || !adminSel.start || adminSaving) return;
+  const keys = adminGetSelectedKeys();
+  if (!keys.length) return;
+
+  const priceInput = document.getElementById('aapPrice');
+  const newPriceVal = action === 'price'
+    ? (parseInt(priceInput?.value) || adminBasePrice)
+    : null;
+
+  const statusEl = document.getElementById('aapStatus');
+  if (statusEl) statusEl.textContent = 'Сохранение…';
+  adminSaving = true;
+
+  let saved = 0, errors = 0;
+  for (const key of keys) {
+    const cur       = adminCAL[key] || { busy: false, price: adminBasePrice };
+    const newBusy   = action === 'busy' ? true : action === 'free' ? false : cur.busy;
+    const newPrice  = action === 'price' ? newPriceVal : cur.price;
+
+    // Optimistic local update
+    adminCAL[key] = { busy: newBusy, price: newPrice };
+    if (!adminHouse.calendar) adminHouse.calendar = {};
+    adminHouse.calendar[key] = { busy: newBusy, price: newPrice };
+
+    try {
+      const resp = await fetch(`/api/calendar/${adminHouse.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Token': 'Толкачёва2020'
+        },
+        body: JSON.stringify({ date: key, price: newPrice, is_booked: newBusy })
+      });
+      if (resp.ok) saved++; else errors++;
+    } catch { errors++; }
+  }
+
+  adminSaving = false;
+  const noun = saved === 1 ? 'день' : saved < 5 ? 'дня' : 'дней';
+  if (statusEl) {
+    statusEl.textContent = errors
+      ? `Сохранено: ${saved}, ошибок: ${errors}`
+      : `✓ Готово — обновлено ${saved} ${noun}`;
+    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3500);
+  }
+  showToast(errors ? `Сохранено с ошибками (${errors})` : `Обновлено ${saved} ${noun}`);
+  adminRender();
+}
+
+function adminSetView(n) {
+  adminViewCount = n;
+  adminRender();
 }
 
 function adminShiftMonths(delta) {
   adminStartOffset += delta;
   adminRender();
 }
-
-function adminSetView(count) {
-  adminViewCount = count;
-  adminRender();
-}
-
-function adminEditDay(key, element) {
-  console.log('adminEditDay called', key, element);
-  const entry = adminCAL[key];
-  if (!entry) {
-    console.log('No entry for key', key);
-    return;
-  }
-  if (!adminHouse) {
-    console.error('adminHouse not defined');
-    return;
-  }
-  const parts = key.split('-');
-  const price = entry.price;
-  const busy = entry.busy;
-  // Вызываем существующую функцию открытия попапа редактирования
-  openDayEdit(element, adminHouse.id, key, price, busy);
-}
-
-function adminUpdateInfo() {
-  const info = document.getElementById('adminInfoBar');
-  if (!info) return;
-  if (adminHouse) {
-    info.textContent = `Редактирование календаря объекта: ${adminHouse.name}. Нажмите на свободный день, чтобы изменить цену или статус.`;
-  } else {
-    info.textContent = 'Объект не выбран.';
-  }
-}
-
-function monthName(month) {
-  const names = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-  return names[month];
-}
-
-/* Day edit popup */
-let popupHouseId = null;
-let popupKey = null;
-
-function openDayEdit(el, houseId, key, price, busy) {
-  console.log('openDayEdit called', { el, houseId, key, price, busy });
-  if (!el) {
-    console.error('openDayEdit: element is null');
-    return;
-  }
-  popupHouseId = houseId;
-  popupKey = key;
-  const parts = key.split('-');
-  const dateStr = `${parts[2]}.${String(parseInt(parts[1])+1).padStart(2,'0')}.${parts[0]}`;
-  document.getElementById('popupDateLabel').textContent = dateStr;
-  document.getElementById('popupPrice').value = price;
-  document.getElementById('popupBusy').checked = busy;
-
-  const popup = document.getElementById('dayEditPopup');
-  if (!popup) {
-    console.error('popup element not found');
-    return;
-  }
-  const rect = el.getBoundingClientRect();
-  popup.style.top = (window.scrollY + rect.bottom + 6) + 'px';
-  popup.style.left = Math.min(rect.left, window.innerWidth - 240) + 'px';
-  popup.classList.add('open');
-  console.log('popup opened');
-}
-
-function closePopup() {
-  document.getElementById('dayEditPopup').classList.remove('open');
-  popupHouseId = null;
-  popupKey = null;
-}
-
-function saveDay() {
-  if (!popupHouseId || !popupKey) return;
-  const price = parseInt(document.getElementById('popupPrice').value) || 0;
-  const busy  = document.getElementById('popupBusy').checked;
-
-  const h = houses.find(x => x.id === popupHouseId);
-  h.calendar[popupKey] = { busy, price };
-  saveHouses(houses);
-  closePopup();
-  renderAdminCalendar();
-  showToast('Изменения сохранены');
-}
-
-document.addEventListener('click', e => {
-  const popup = document.getElementById('dayEditPopup');
-  if (popup.classList.contains('open') && !popup.contains(e.target) && !e.target.closest('.cal-day[data-key]')) {
-    closePopup();
-  }
-});
 
 /* Add house */
 function addHouse() {
