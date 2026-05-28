@@ -127,9 +127,11 @@
   }
   @media (max-width: 640px) {
     .cards-grid { grid-template-columns: 1fr; }
-    header { padding: 0 16px; }
-    .hero { padding: 36px 16px 32px; }
-    .grid-section { padding: 28px 16px 48px; }
+    header { padding: 0 12px; height: 56px; }
+    .logo { font-size: 1.25rem; }
+    .btn-header { padding: 6px 12px; font-size: 0.75rem; letter-spacing: 0.04em; }
+    .hero { padding: 32px 16px 28px; }
+    .grid-section { padding: 24px 16px 48px; }
   }
   @media (min-width: 1200px) {
     .cards-grid { grid-template-columns: repeat(4, 1fr); }
@@ -332,17 +334,22 @@
   .cal-day.empty { cursor: default; }
   .cal-day.free { background: #e8f0e8; color: #2d5a2d; }
   .cal-day.free .day-price { font-size: 0.6rem; color: var(--sage); }
-  .cal-day.busy { background: #e8e4dc; color: var(--muted); cursor: not-allowed; }
+  .cal-day.busy { background: #FFE4E1; color: #9b4f2a; cursor: not-allowed; }
   .cal-day.busy .day-status { font-size: 0.58rem; }
   .cal-day-num { font-weight: 500; }
 
   /* ── ADMIN ── */
-  .admin-view { padding: 32px; }
+  .admin-view { padding: 28px 32px 60px; }
+  @media (max-width: 640px) { .admin-view { padding: 16px 16px 48px; } }
+  .admin-topbar {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px; margin-bottom: 28px;
+  }
   .admin-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 2rem; font-weight: 400; margin-bottom: 8px;
+    font-size: 2rem; font-weight: 400; margin-bottom: 4px;
   }
-  .admin-subtitle { font-size: 0.85rem; color: var(--muted); margin-bottom: 32px; }
+  .admin-subtitle { font-size: 0.85rem; color: var(--muted); }
 
   .admin-section {
     background: var(--card-bg); border: 1px solid var(--border);
@@ -351,6 +358,71 @@
   .admin-section-title {
     font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
     color: var(--muted); margin-bottom: 20px;
+  }
+
+  /* Stats bar */
+  .admin-stats { display: flex; gap: 14px; margin-bottom: 28px; flex-wrap: wrap; }
+  .stat-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px 22px; flex: 1; min-width: 130px;
+  }
+  .stat-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.9rem; font-weight: 600; color: var(--ink); line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--muted); margin-top: 4px;
+  }
+
+  /* Admin card controls */
+  .admin-card-controls {
+    display: flex; gap: 8px; padding: 0 16px 14px;
+  }
+  .btn-edit {
+    flex: 1; background: transparent; color: var(--ink);
+    border: 1px solid var(--border); padding: 7px 0; border-radius: 4px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.75rem;
+    letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-edit:hover { border-color: var(--warm); color: var(--warm); }
+  .btn-delete-card {
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--border); padding: 7px 11px; border-radius: 4px;
+    font-size: 0.88rem; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-delete-card:hover { border-color: var(--rust); color: var(--rust); }
+
+  /* Photo upload zone */
+  .upload-zone {
+    border: 2px dashed var(--border); border-radius: 6px;
+    padding: 20px 16px; text-align: center; cursor: pointer;
+    font-size: 0.85rem; color: var(--muted); margin-top: 8px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--warm); background: rgba(200,169,126,.06);
+  }
+  .photo-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .photo-thumb {
+    position: relative; width: 76px; height: 76px; border-radius: 4px;
+    overflow: hidden; border: 1px solid var(--border); background: var(--border);
+  }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-thumb-del {
+    position: absolute; top: 3px; right: 3px;
+    background: rgba(26,23,16,.72); color: #fff; border: none;
+    width: 20px; height: 20px; border-radius: 50%; font-size: .65rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    line-height: 1; transition: background .15s;
+  }
+  .photo-thumb-del:hover { background: var(--rust); }
+
+  /* House edit modal extra */
+  .modal-form-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.7rem; font-weight: 500; margin-bottom: 24px;
   }
 
   select, input, textarea {
@@ -528,10 +600,10 @@
   .day.free .day-sub { color: #3B6D11; }
   .day.free:hover { background: #C0DD97; }
 
-  .day.busy { background: var(--color-background-secondary); cursor: not-allowed; }
+  .day.busy { background: #FDECEA; cursor: not-allowed; }
   .day.busy:hover { transform: none; }
-  .day.busy .day-num { color: var(--color-text-tertiary); }
-  .day.busy .day-sub { color: var(--color-text-tertiary); }
+  .day.busy .day-num { color: #9b2020; }
+  .day.busy .day-sub { color: #c0505080; }
 
   .day.today { outline: 2px solid #378ADD; outline-offset: -2px; }
   .day.today .day-num { color: #0C447C; }
@@ -588,6 +660,69 @@
   .admin-section .months-wrap {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
+
+  /* ── MOBILE (≤ 480px) ── */
+  @media (max-width: 480px) {
+    /* Header */
+    header { padding: 0 12px; height: 52px; }
+    .logo { font-size: 1.1rem; }
+    .btn-header { padding: 5px 10px; font-size: 0.72rem; }
+
+    /* Hero */
+    .hero { padding: 28px 14px 24px; }
+    .hero h1 { font-size: 2rem; }
+    .hero p { font-size: 0.9rem; }
+
+    /* Grid section */
+    .grid-section { padding: 20px 12px 40px; }
+
+    /* Card carousel height */
+    .carousel { height: 200px; }
+
+    /* Modal */
+    .modal { margin: 12px; border-radius: 8px; }
+    .modal-content { padding: 16px !important; }
+    .modal-gallery { height: 200px !important; }
+    .modal-header { gap: 8px; }
+
+    /* Cal header wraps on mobile */
+    .cal-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .cal-header > div:last-child { width: 100%; justify-content: space-between; }
+    .nav-label { min-width: unset !important; font-size: 13px; }
+    .view-toggle { flex: 1; }
+    .vt-btn { flex: 1; text-align: center; }
+
+    /* Month grid: slightly smaller days */
+    .day { font-size: 11px; }
+    .day-num { font-size: 12px; }
+    .day-sub { font-size: 8.5px; }
+    .months-wrap { gap: 16px 12px; }
+
+    /* Admin view */
+    .admin-view { padding: 14px 12px 48px; }
+    .admin-topbar { gap: 8px; margin-bottom: 20px; }
+    .admin-title { font-size: 1.5rem; }
+    .stat-card { padding: 10px 14px; min-width: unset; flex: 1 1 40%; }
+    .stat-card .sc-val { font-size: 1.4rem; }
+
+    /* Admin action panel */
+    .admin-action-panel { padding: 14px; }
+    .aap-price-group input { width: 80px; }
+    .aap-btn { padding: 7px 12px; font-size: 0.72rem; }
+
+    /* House modal form */
+    .form-row { grid-template-columns: 1fr !important; }
+    .upload-zone { padding: 14px 10px; }
+    .photo-thumb { width: 60px; height: 60px; }
+  }
+
+  /* ── MOBILE (481–640px) ── */
+  @media (min-width: 481px) and (max-width: 640px) {
+    .cal-header { flex-wrap: wrap; gap: 10px; }
+    .nav-label { min-width: unset !important; }
+    .modal-gallery { height: 220px !important; }
+    .stat-card { flex: 1 1 calc(50% - 8px); }
+  }
 </style>
 </head>
 <body>
@@ -611,57 +746,95 @@
 <!-- ADMIN VIEW -->
 <div class="view" id="viewAdmin">
   <div class="admin-view">
-    <div class="admin-title">Панель управления</div>
-    <div class="admin-subtitle">Управление объектами недвижимости и расписанием</div>
+
+    <div class="admin-topbar">
+      <div>
+        <div class="admin-title">Панель управления</div>
+        <div class="admin-subtitle">Управление объектами и расписанием аренды</div>
+      </div>
+      <button class="btn-primary" onclick="openHouseModal(null)" style="white-space:nowrap;">+ Добавить объект</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="admin-stats" id="adminStats"></div>
+
+    <!-- Objects grid (same style as catalog) -->
+    <div class="admin-section">
+      <div class="admin-section-title">Объекты недвижимости</div>
+      <div class="cards-grid" id="adminCardsGrid"></div>
+    </div>
 
     <!-- Calendar manager -->
     <div class="admin-section">
       <div class="admin-section-title">Управление календарём</div>
-      <div class="form-group">
+      <div class="form-group" style="max-width:340px;">
         <label>Выбрать объект</label>
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <select id="adminHouseSelect" onchange="renderAdminCalendar()" style="flex: 1;">
-            <option value="">— выберите объект —</option>
-          </select>
-          <button class="btn-primary" onclick="editSelectedHouse()" style="white-space: nowrap; padding: 6px 12px; font-size: 0.8rem;">Редактировать</button>
-          <button class="btn-primary" onclick="deleteSelectedHouse()" style="white-space: nowrap; padding: 6px 12px; font-size: 0.8rem;">Удалить</button>
-        </div>
+        <select id="adminHouseSelect" onchange="renderAdminCalendar()">
+          <option value="">— выберите объект —</option>
+        </select>
       </div>
       <div id="adminCalendarWrap"></div>
     </div>
 
-    <!-- Add house -->
-    <div class="admin-section">
-      <div class="admin-section-title">Добавить новый объект</div>
+  </div>
+</div>
+
+<!-- HOUSE EDIT MODAL -->
+<div class="modal-overlay" id="houseModalOverlay" onclick="closeHouseModal(event)">
+  <div class="modal" style="max-width:680px;" id="houseModal">
+    <button class="modal-close" onclick="closeHouseModalDirect()">✕</button>
+    <div class="modal-content" style="padding:28px 32px;">
+      <div class="modal-form-title" id="houseModalTitle">Новый объект</div>
+
+      <!-- Photos -->
+      <div class="form-group">
+        <label>Фотографии</label>
+        <div class="photo-thumbs" id="editPhotoThumbs"></div>
+        <div class="upload-zone" id="uploadZone"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handlePhotoDrop(event)"
+             onclick="document.getElementById('photoFileInput').click()">
+          <div style="font-size:1.6rem;margin-bottom:6px;">🖼</div>
+          <div>Перетащите фото или <span style="color:var(--warm);text-decoration:underline;cursor:pointer;">нажмите для выбора</span></div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">JPG, PNG, WEBP · до 10 МБ каждый</div>
+        </div>
+        <input type="file" id="photoFileInput" multiple accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" onchange="handlePhotoFiles(this.files)">
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input type="text" id="photoUrlInput" placeholder="Или вставьте ссылку на фото…" style="flex:1;">
+          <button class="btn-secondary" onclick="addPhotoByUrl()" style="white-space:nowrap;padding:8px 14px;">Добавить</button>
+        </div>
+      </div>
+
       <div class="form-row">
         <div class="form-group">
           <label>Название</label>
-          <input type="text" id="newTitle" placeholder="Коттедж «Сосновый бор»">
+          <input type="text" id="editName" placeholder="Коттедж «Сосновый бор»">
         </div>
         <div class="form-group">
-          <label>Область / Город, площадь</label>
-          <input type="text" id="newLocation" placeholder="Москва, 120 м²">
+          <label>Цена за ночь (₽)</label>
+          <input type="number" id="editPrice" placeholder="150" min="0">
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Базовая цена за ночь ($)</label>
-          <input type="number" id="newPrice" placeholder="150">
-        </div>
-        <div class="form-group">
-          <label>Удобства (через запятую)</label>
-          <input type="text" id="newAmenities" placeholder="Wi-Fi, Парковка, Кухня">
-        </div>
+      <div class="form-group">
+        <label>Адрес / Площадь</label>
+        <input type="text" id="editArea" placeholder="Московская обл., Истринский р-н, 140 м²">
       </div>
       <div class="form-group">
         <label>Описание</label>
-        <textarea id="newDesc" placeholder="Краткое описание объекта..."></textarea>
+        <textarea id="editDesc" rows="3" placeholder="Краткое описание объекта…"></textarea>
       </div>
       <div class="form-group">
-        <label>Ссылки на фото (по одной на строку)</label>
-        <textarea id="newPhotos" placeholder="https://picsum.photos/seed/house1/800/600&#10;https://picsum.photos/seed/house2/800/600"></textarea>
+        <label>Удобства <span style="color:var(--muted);font-weight:300;">(через запятую)</span></label>
+        <input type="text" id="editAmenities" placeholder="Wi-Fi, Парковка, Сауна, Кухня, Барбекю">
       </div>
-      <button class="btn-primary" id="addHouseBtn" onclick="addHouse()">+ Добавить объект</button>
+
+      <div id="houseModalError" style="color:var(--rust);font-size:0.85rem;min-height:20px;margin-bottom:8px;"></div>
+
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="closeHouseModalDirect()">Отмена</button>
+        <button class="btn-primary" id="houseModalSaveBtn" onclick="saveHouseModal()">Сохранить</button>
+      </div>
     </div>
   </div>
 </div>
@@ -774,121 +947,27 @@ const MONTHS_RU = ['Январь','Февраль','Март','Апрель','М
                    'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const DAYS_RU   = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 
-const DEFAULT_HOUSES = [
-  {
-    id: 'h1',
-    title: 'Коттедж «Берёзовая роща»',
-    location: 'Подмосковье, Истринский р-н, 140 м²',
-    price: 150,
-    description: 'Просторный двухэтажный коттедж в окружении берёзового леса. Тёплый пол, камин, сауна — всё для идеального отдыха. До ближайшего озера пять минут пешком. В вечернее время слышно, как шумит ветер в кронах деревьев.',
-    amenities: ['Wi-Fi', 'Сауна', 'Камин', 'Парковка', 'Кухня', 'Барбекю', 'Детская площадка'],
-    photos: [
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
-      'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
-      'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80',
-      'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&q=80'
-    ],
-    calendar: {}
-  },
-  {
-    id: 'h2',
-    title: 'Дача «Тихая гавань»',
-    location: 'Карелия, Сортавала, 80 м²',
-    price: 120,
-    description: 'Уютная дача на берегу Ладожского озера. Кристально чистая вода, скалистые берега и нетронутая природа Карелии. Идеально для рыбалки и медитативного отдыха вдали от городской суеты.',
-    amenities: ['Wi-Fi', 'Лодка', 'Рыбалка', 'Кухня', 'Терраса', 'Мангал'],
-    photos: [
-      'https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?w=800&q=80',
-      'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&q=80',
-      'https://images.unsplash.com/photo-1602343168117-bb8ffe3e2e9f?w=800&q=80',
-      'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&q=80'
-    ],
-    calendar: {}
-  },
-  {
-    id: 'h3',
-    title: 'Шале «Горный ветер»',
-    location: 'Сочи, Красная Поляна, 200 м²',
-    price: 280,
-    description: 'Роскошное шале в горном стиле с панорамными видами на хребет. Большая гостиная с высокими потолками, профессиональная кухня и просторная терраса. В 15 минутах езды от горнолыжных трасс «Газпром» и «Роза Хутор».',
-    amenities: ['Wi-Fi', 'Джакузи', 'Сауна', 'Камин', 'Парковка', 'Кухня', 'Терраса', 'Тренажёрный зал'],
-    photos: [
-      'https://images.unsplash.com/photo-1542718610-a1d656d1884c?w=800&q=80',
-      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
-      'https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=800&q=80',
-      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80'
-    ],
-    calendar: {}
-  }
-];
-
-// Seed calendar for house 1 (October 2026)
-function seedCalendar1(cal) {
-  const year = 2026;
-  // Oct: busy 5-10, 15-20
-  for (let d = 1; d <= 31; d++) {
-    const key = `${year}-09-${String(d).padStart(2,'0')}`; // Oct is month index 9
-    const busy = (d >= 5 && d <= 10) || (d >= 15 && d <= 20);
-    if (busy) {
-      cal[`2026-09-${String(d).padStart(2,'0')}`] = { busy: true, price: 0 };
-    } else if (d >= 1 && d <= 31) {
-      const price = 120 + Math.floor((d * 7) % 61);
-      cal[`2026-09-${String(d).padStart(2,'0')}`] = { busy: false, price };
-    }
-  }
-  // Nov
-  for (let d = 1; d <= 30; d++) {
-    const price = 130 + Math.floor((d * 11) % 51);
-    cal[`2026-10-${String(d).padStart(2,'0')}`] = { busy: false, price };
-  }
-  return cal;
-}
-
-// Seed calendar for house 2 (November 2026, busy 12-14)
-function seedCalendar2(cal) {
-  for (let d = 1; d <= 31; d++) {
-    const price = 100 + Math.floor((d * 9) % 41);
-    cal[`2026-09-${String(d).padStart(2,'0')}`] = { busy: false, price };
-  }
-  for (let d = 1; d <= 30; d++) {
-    const busy = d >= 12 && d <= 14;
-    cal[`2026-10-${String(d).padStart(2,'0')}`] = busy ? { busy: true, price: 0 } : { busy: false, price: 100 + Math.floor((d * 13) % 51) };
-  }
-  return cal;
-}
+/* DEFAULT_HOUSES removed — all data comes from API */
 
 async function loadHouses() {
   try {
     const response = await fetch('/api/houses');
-    if (!response.ok) throw new Error('Ошибка загрузки домов');
+    if (!response.ok) throw new Error('HTTP ' + response.status);
     const result = await response.json();
     if (result.success) {
-      // добавляем пустой календарь к каждому дому
       return result.data.map(house => ({ ...house, calendar: {} }));
-    } else {
-      console.error('API error:', result.error);
-      return [];
     }
+    return [];
   } catch (err) {
     console.error('Не удалось загрузить дома:', err);
-    // fallback на демо-данные
-    return DEFAULT_HOUSES.map(h => ({ ...h, calendar: {} }));
+    return [];
   }
-}
-
-function saveHouses(houses) {
-  // не используется, оставлена для совместимости
-  console.warn('saveHouses deprecated, use API directly');
 }
 
 let houses = [];
 loadHouses().then(data => {
-  console.log('Дома загружены:', data.length, 'шт.');
   houses = data;
-  // если мы на странице каталога, перерисовываем карточки
-  if (document.getElementById('cardsGrid')) {
-    renderCards();
-  }
+  renderCards();
 });
 
 /* ================================================================
@@ -1100,86 +1179,274 @@ function closeFullscreen() {
    ================================================================ */
 
 /* ================================================================
-   ADMIN
+   ADMIN — house management
    ================================================================ */
+const ADMIN_TOKEN = 'TolkachevaAdmin2020';
+
 function initAdmin() {
+  renderAdminStats();
+  renderAdminCards();
+  initAdminSelect();
+}
+
+function renderAdminStats() {
+  const el = document.getElementById('adminStats');
+  if (!el) return;
+  const total   = houses.length;
+  const avgPrice = total ? Math.round(houses.reduce((s, h) => s + (h.base_price || 0), 0) / total) : 0;
+  const photos  = houses.reduce((s, h) => s + (h.photos?.length || 0), 0);
+  el.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-value">${total}</div>
+      <div class="stat-label">Объектов</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${avgPrice} ₽</div>
+      <div class="stat-label">Средняя цена</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${photos}</div>
+      <div class="stat-label">Фотографий</div>
+    </div>
+  `;
+}
+
+function renderAdminCards() {
+  const grid = document.getElementById('adminCardsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  if (!houses.length) {
+    grid.innerHTML = '<p style="color:var(--muted);font-size:.9rem;">Объекты не найдены. Добавьте первый.</p>';
+    return;
+  }
+
+  houses.forEach(h => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const photos   = h.photos?.length ? h.photos : ['https://picsum.photos/seed/' + h.id + '/800/600'];
+    const dotsHtml = photos.map((_, i) => `<span class="carousel-dot${i===0?' active':''}"></span>`).join('');
+    const imgsHtml = photos.map(p => `<img src="${p}" alt="" loading="lazy">`).join('');
+    card.innerHTML = `
+      <div class="carousel">
+        <div class="carousel-track">${imgsHtml}</div>
+        <button class="carousel-btn prev">&#8592;</button>
+        <button class="carousel-btn next">&#8594;</button>
+        <div class="carousel-dots">${dotsHtml}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${h.name}</div>
+        <div class="card-meta">📍 ${h.area}</div>
+        <div class="card-footer">
+          <div class="card-price">${h.base_price} ₽ <span>/ ночь</span></div>
+        </div>
+      </div>
+      <div class="admin-card-controls">
+        <button class="btn-edit" onclick="openHouseModal('${h.id}')">✏ Редактировать</button>
+        <button class="btn-delete-card" onclick="deleteHouseById('${h.id}')" title="Удалить">🗑</button>
+      </div>
+    `;
+    grid.appendChild(card);
+    initCarousel(card.querySelector('.carousel'), photos);
+  });
+}
+
+function initAdminSelect() {
   const sel = document.getElementById('adminHouseSelect');
+  if (!sel) return;
+  const prev = sel.value;
   sel.innerHTML = '<option value="">— выберите объект —</option>';
   houses.forEach(h => {
-    sel.innerHTML += `<option value="${h.id}">${h.name}</option>`;
+    sel.innerHTML += `<option value="${h.id}"${h.id === prev ? ' selected' : ''}>${h.name}</option>`;
   });
-  document.getElementById('adminCalendarWrap').innerHTML = '';
 }
 
-function deleteSelectedHouse() {
-  const sel = document.getElementById('adminHouseSelect');
-  const id = sel.value;
-  if (!id) {
-    showToast('Выберите объект для удаления');
-    return;
-  }
-  if (!confirm('Вы уверены, что хотите удалить этот объект?')) return;
-  const index = houses.findIndex(h => h.id === id);
-  if (index !== -1) {
-    houses.splice(index, 1);
-    saveHouses(houses);
-    initAdmin(); // обновить список
-    renderCards(); // обновить каталог
-    showToast('Объект удалён');
-  }
-}
-
+/* ── House modal (add / edit) ── */
 let editingHouseId = null;
+let editPhotos     = [];
 
-function editSelectedHouse() {
-  const sel = document.getElementById('adminHouseSelect');
-  const id = sel.value;
-  if (!id) {
-    showToast('Выберите объект для редактирования');
-    return;
+function openHouseModal(houseId) {
+  editingHouseId = houseId;
+  editPhotos     = [];
+
+  document.getElementById('houseModalTitle').textContent = houseId ? 'Редактировать объект' : 'Новый объект';
+  document.getElementById('houseModalError').textContent = '';
+
+  if (houseId) {
+    const h = houses.find(x => x.id === houseId);
+    if (!h) return;
+    document.getElementById('editName').value       = h.name        || '';
+    document.getElementById('editArea').value       = h.area        || '';
+    document.getElementById('editPrice').value      = h.base_price  || '';
+    document.getElementById('editDesc').value       = h.description || '';
+    document.getElementById('editAmenities').value  = (h.amenities  || []).join(', ');
+    editPhotos = [...(h.photos || [])];
+  } else {
+    ['editName','editArea','editPrice','editDesc','editAmenities'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
   }
-  const house = houses.find(h => h.id === id);
-  if (!house) return;
-  // Заполняем форму
-  document.getElementById('newTitle').value = house.name || '';
-  document.getElementById('newLocation').value = house.area || '';
-  document.getElementById('newPrice').value = house.base_price || 150;
-  document.getElementById('newDesc').value = house.description || '';
-  document.getElementById('newAmenities').value = (house.amenities || []).join(', ');
-  document.getElementById('newPhotos').value = (house.photos || []).join('\n');
-  // Меняем кнопку
-  const btn = document.getElementById('addHouseBtn');
-  btn.textContent = 'Обновить объект';
-  btn.onclick = updateHouse;
-  editingHouseId = id;
-  showToast('Загружены данные для редактирования. Измените поля и нажмите "Обновить объект".');
+
+  renderEditThumbs();
+  document.getElementById('houseModalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
-function updateHouse() {
-  if (!editingHouseId) return;
-  const house = houses.find(h => h.id === editingHouseId);
-  if (!house) return;
-  // Обновляем данные
-  house.name = document.getElementById('newTitle').value.trim();
-  house.area = document.getElementById('newLocation').value.trim();
-  house.base_price = parseInt(document.getElementById('newPrice').value) || 150;
-  house.description = document.getElementById('newDesc').value.trim();
-  house.amenities = document.getElementById('newAmenities').value.split(',').map(s => s.trim()).filter(Boolean);
-  house.photos = document.getElementById('newPhotos').value.split('\n').map(s => s.trim()).filter(Boolean);
-  // Если фото пусто, оставляем дефолтное
-  if (house.photos.length === 0) {
-    house.photos = ['https://picsum.photos/seed/' + house.id + '/800/600'];
+function closeHouseModal(e) {
+  if (e.target === document.getElementById('houseModalOverlay')) closeHouseModalDirect();
+}
+function closeHouseModalDirect() {
+  document.getElementById('houseModalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderEditThumbs() {
+  const wrap = document.getElementById('editPhotoThumbs');
+  if (!wrap) return;
+  wrap.innerHTML = editPhotos.map((url, i) => `
+    <div class="photo-thumb">
+      <img src="${url}" alt="" loading="lazy">
+      <button class="photo-thumb-del" onclick="removeEditPhoto(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeEditPhoto(i) {
+  editPhotos.splice(i, 1);
+  renderEditThumbs();
+}
+
+function addPhotoByUrl() {
+  const inp = document.getElementById('photoUrlInput');
+  const url = inp.value.trim();
+  if (!url) return;
+  if (!url.startsWith('http')) { showToast('Введите корректную ссылку'); return; }
+  editPhotos.push(url);
+  renderEditThumbs();
+  inp.value = '';
+}
+
+async function handlePhotoFiles(files) {
+  const houseId = editingHouseId || 'temp';
+  for (const file of Array.from(files)) {
+    if (!file.type.startsWith('image/')) { showToast('Только изображения'); continue; }
+    if (file.size > 10 * 1024 * 1024) { showToast(`${file.name} слишком большой (макс 10 МБ)`); continue; }
+    const fd = new FormData();
+    fd.append('photo', file);
+    try {
+      const resp = await fetch(`/api/upload/${houseId}`, {
+        method: 'POST',
+        headers: { 'X-Admin-Token': ADMIN_TOKEN },
+        body: fd
+      });
+      const result = await resp.json();
+      if (result.success) {
+        editPhotos.push(result.data.url);
+        renderEditThumbs();
+      } else {
+        showToast('Ошибка загрузки: ' + result.error);
+      }
+    } catch (err) {
+      showToast('Сеть: ' + err.message);
+    }
   }
-  saveHouses(houses);
-  // Возвращаем кнопку в исходное состояние
-  const btn = document.getElementById('addHouseBtn');
-  btn.textContent = 'Добавить объект';
-  btn.onclick = addHouse;
-  editingHouseId = null;
-  // Обновляем интерфейс
-  initAdmin();
-  renderCards();
-  showToast('Объект обновлён');
+  document.getElementById('photoFileInput').value = '';
+}
+
+function handlePhotoDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag-over');
+  handlePhotoFiles(e.dataTransfer.files);
+}
+
+async function saveHouseModal() {
+  const name = document.getElementById('editName').value.trim();
+  const errEl = document.getElementById('houseModalError');
+  errEl.textContent = '';
+  if (!name) { errEl.textContent = 'Введите название объекта'; return; }
+
+  const price = parseInt(document.getElementById('editPrice').value) || 0;
+  if (price <= 0) { errEl.textContent = 'Укажите цену больше 0'; return; }
+
+  const photos = editPhotos.length
+    ? editPhotos
+    : [`https://picsum.photos/seed/${Date.now()}/800/600`];
+
+  const payload = {
+    name,
+    area:        document.getElementById('editArea').value.trim(),
+    base_price:  price,
+    description: document.getElementById('editDesc').value.trim(),
+    amenities:   document.getElementById('editAmenities').value.split(',').map(s => s.trim()).filter(Boolean),
+    photos
+  };
+
+  const btn = document.getElementById('houseModalSaveBtn');
+  btn.textContent = 'Сохранение…';
+  btn.disabled = true;
+
+  try {
+    const isEdit = !!editingHouseId;
+    const resp = await fetch(
+      isEdit ? `/api/houses/${editingHouseId}` : '/api/houses',
+      {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Token': ADMIN_TOKEN
+        },
+        body: JSON.stringify(payload)
+      }
+    );
+    const result = await resp.json();
+
+    if (result.success) {
+      houses = await loadHouses();
+      renderCards();
+      renderAdminCards();
+      renderAdminStats();
+      initAdminSelect();
+      closeHouseModalDirect();
+      showToast(isEdit ? 'Объект обновлён' : 'Объект добавлен');
+    } else {
+      errEl.textContent = 'Ошибка: ' + (result.error || 'неизвестная');
+    }
+  } catch (err) {
+    errEl.textContent = 'Сетевая ошибка: ' + err.message;
+  }
+
+  btn.textContent = 'Сохранить';
+  btn.disabled = false;
+}
+
+async function deleteHouseById(id) {
+  const h = houses.find(x => x.id === id);
+  if (!h) return;
+  if (!confirm(`Удалить «${h.name}»?\nЭто действие нельзя отменить.`)) return;
+
+  try {
+    const resp = await fetch(`/api/houses/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-Admin-Token': ADMIN_TOKEN }
+    });
+    const result = await resp.json();
+    if (result.success) {
+      houses = await loadHouses();
+      renderCards();
+      renderAdminCards();
+      renderAdminStats();
+      initAdminSelect();
+      // Сбрасываем календарь если удалённый был выбран
+      if (document.getElementById('adminHouseSelect').value === id) {
+        document.getElementById('adminCalendarWrap').innerHTML = '';
+      }
+      showToast('Объект удалён');
+    } else {
+      showToast('Ошибка: ' + result.error);
+    }
+  } catch (err) {
+    showToast('Ошибка: ' + err.message);
+  }
 }
 
 function renderAdminCalendar() {
@@ -1522,38 +1789,7 @@ function adminShiftMonths(delta) {
   adminRender();
 }
 
-/* Add house */
-function addHouse() {
-  const title    = document.getElementById('newTitle').value.trim();
-  const location = document.getElementById('newLocation').value.trim();
-  const price    = parseInt(document.getElementById('newPrice').value) || 100;
-  const desc     = document.getElementById('newDesc').value.trim();
-  const amenStr  = document.getElementById('newAmenities').value.trim();
-  const photosStr= document.getElementById('newPhotos').value.trim();
-
-  if (!title) { showToast('Введите название объекта'); return; }
-
-  const amenities = amenStr ? amenStr.split(',').map(s => s.trim()).filter(Boolean) : [];
-  const photos    = photosStr ? photosStr.split('\n').map(s => s.trim()).filter(Boolean)
-                              : ['https://picsum.photos/seed/new' + Date.now() + '/800/600'];
-
-  const newHouse = {
-    id: 'h' + Date.now(),
-    title, location, price, description: desc || 'Описание скоро появится.',
-    amenities, photos, calendar: {}
-  };
-
-  houses.push(newHouse);
-  saveHouses(houses);
-
-  // Reset form
-  ['newTitle','newLocation','newPrice','newDesc','newAmenities','newPhotos'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-
-  initAdmin();
-  showToast('Объект добавлен: ' + title);
-}
+/* addHouse removed — use openHouseModal(null) + saveHouseModal() instead */
 
 /* ================================================================
    КАЛЕНДАРЬ НА ГОД СО СТРЕЛКАМИ (из rental_calendar.html)

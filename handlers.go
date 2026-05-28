@@ -3,7 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -122,6 +125,118 @@ func (h *Handlers) CreateHouseHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, Response{
 		Success: true,
 		Data:    house,
+	})
+}
+
+// UpdateHouseHandler обновляет дом по ID
+func (h *Handlers) UpdateHouseHandler(w http.ResponseWriter, r *http.Request) {
+	if !isAdmin(r) {
+		writeError(w, http.StatusUnauthorized, "требуется авторизация администратора")
+		return
+	}
+
+	id := strings.TrimPrefix(r.URL.Path, "/api/houses/")
+	if id == "" {
+		writeError(w, http.StatusBadRequest, "ID дома не указан")
+		return
+	}
+
+	var input HouseCreate
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, "неверный формат JSON")
+		return
+	}
+
+	if errs := validateHouseCreate(input); len(errs) > 0 {
+		writeJSON(w, http.StatusBadRequest, Response{
+			Success: false,
+			Error:   "ошибки валидации",
+			Data:    errs,
+		})
+		return
+	}
+
+	updated := House{
+		ID:          id,
+		Name:        input.Name,
+		Area:        input.Area,
+		BasePrice:   input.BasePrice,
+		Photos:      input.Photos,
+		Description: input.Description,
+		Amenities:   input.Amenities,
+	}
+
+	if err := h.storage.UpdateHouse(id, updated); err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, Response{
+		Success: true,
+		Data:    updated,
+	})
+}
+
+// UploadPhotoHandler принимает файл и сохраняет в uploads/{houseId}/
+func (h *Handlers) UploadPhotoHandler(w http.ResponseWriter, r *http.Request) {
+	if !isAdmin(r) {
+		writeError(w, http.StatusUnauthorized, "требуется авторизация администратора")
+		return
+	}
+
+	houseID := strings.TrimPrefix(r.URL.Path, "/api/upload/")
+	if houseID == "" {
+		houseID = "temp"
+	}
+	// Sanitize houseID
+	houseID = strings.ReplaceAll(houseID, "..", "")
+	houseID = strings.ReplaceAll(houseID, "/", "")
+
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		writeError(w, http.StatusBadRequest, "ошибка парсинга формы: "+err.Error())
+		return
+	}
+
+	file, header, err := r.FormFile("photo")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "файл не найден в запросе")
+		return
+	}
+	defer file.Close()
+
+	// Проверяем расширение
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true, ".gif": true}
+	if !allowed[ext] {
+		writeError(w, http.StatusBadRequest, "допустимые форматы: jpg, png, webp, gif")
+		return
+	}
+
+	dir := filepath.Join("uploads", houseID)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		writeError(w, http.StatusInternalServerError, "не удалось создать директорию")
+		return
+	}
+
+	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+	dstPath := filepath.Join(dir, filename)
+
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "не удалось создать файл")
+		return
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		writeError(w, http.StatusInternalServerError, "ошибка записи файла")
+		return
+	}
+
+	url := fmt.Sprintf("/uploads/%s/%s", houseID, filename)
+	writeJSON(w, http.StatusOK, Response{
+		Success: true,
+		Data:    map[string]string{"url": url},
 	})
 }
 

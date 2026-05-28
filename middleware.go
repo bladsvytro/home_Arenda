@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-const adminToken = "Толкачёва2020" // В реальном приложении хранить в конфигурации
+const adminToken = "TolkachevaAdmin2020" // ASCII-токен для HTTP-заголовков
 
 // isAdmin проверяет заголовок X-Admin-Token
 func isAdmin(r *http.Request) bool {

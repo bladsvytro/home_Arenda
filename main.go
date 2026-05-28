@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
@@ -42,6 +43,8 @@ func main() {
 		switch r.Method {
 		case http.MethodGet:
 			handlers.GetHouseHandler(w, r)
+		case http.MethodPut:
+			handlers.UpdateHouseHandler(w, r)
 		case http.MethodDelete:
 			handlers.DeleteHouseHandler(w, r)
 		default:
@@ -52,6 +55,8 @@ func main() {
 			})
 		}
 	})
+
+	http.HandleFunc("/api/upload/", handlers.UploadPhotoHandler)
 
 	http.HandleFunc("/api/calendar/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -74,6 +79,10 @@ func main() {
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("pong"))
 	})
+
+	// Раздаём загруженные фотографии
+	os.MkdirAll("uploads", 0755)
+	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
 
 	// Статический фронтенд
 	fs := http.FileServer(http.Dir("."))

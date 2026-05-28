@@ -107,18 +107,42 @@ func (s *Storage) AddHouse(house House) error {
 	return s.saveHouses()
 }
 
+// UpdateHouse обновляет существующий дом
+func (s *Storage) UpdateHouse(id string, updated House) error {
+	s.housesMutex.Lock()
+	found := false
+	for i, h := range s.houses {
+		if h.ID == id {
+			s.houses[i] = updated
+			found = true
+			break
+		}
+	}
+	s.housesMutex.Unlock() // разблокируем ДО записи в файл
+
+	if !found {
+		return fmt.Errorf("дом с ID %s не найден", id)
+	}
+	return s.saveHouses()
+}
+
 // DeleteHouse удаляет дом по ID
 func (s *Storage) DeleteHouse(id string) error {
 	s.housesMutex.Lock()
-	defer s.housesMutex.Unlock()
-
+	found := false
 	for i, h := range s.houses {
 		if h.ID == id {
 			s.houses = append(s.houses[:i], s.houses[i+1:]...)
-			return s.saveHouses()
+			found = true
+			break
 		}
 	}
-	return fmt.Errorf("дом с ID %s не найден", id)
+	s.housesMutex.Unlock() // разблокируем ДО записи в файл
+
+	if !found {
+		return fmt.Errorf("дом с ID %s не найден", id)
+	}
+	return s.saveHouses()
 }
 
 // calendarPath возвращает путь к файлу календаря для houseID
