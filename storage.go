@@ -10,10 +10,10 @@ import (
 
 // Storage управляет данными в JSON файлах
 type Storage struct {
-	housesPath   string
-	calendarDir  string
-	houses       []House
-	housesMutex  sync.RWMutex
+	housesPath    string
+	calendarDir   string
+	houses        []House
+	housesMutex   sync.RWMutex
 	calendarMutex sync.Map // для каждого house_id свой sync.RWMutex
 }
 
@@ -48,9 +48,9 @@ func (s *Storage) loadHouses() error {
 	data, err := os.ReadFile(s.housesPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// Файла нет — создаём пустой массив
+			// Файла нет — создаём пустой массив и сразу сохраняем
 			s.houses = []House{}
-			return nil
+			return s.saveHousesLocked()
 		}
 		return err
 	}
@@ -61,16 +61,26 @@ func (s *Storage) loadHouses() error {
 	return nil
 }
 
-// saveHouses записывает дома обратно в файл
-func (s *Storage) saveHouses() error {
-	s.housesMutex.RLock()
+// saveHousesLocked записывает дома в файл (мьютекс уже захвачен)
+func (s *Storage) saveHousesLocked() error {
 	data, err := json.MarshalIndent(s.houses, "", "  ")
-	s.housesMutex.RUnlock()
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(s.housesPath, data, 0644)
+	// Атомарная запись: пишем во временный файл, затем переименовываем
+	tmpPath := s.housesPath + ".tmp"
+	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
+		return err
+	}
+	return os.Rename(tmpPath, s.housesPath)
+}
+
+// saveHouses записывает дома обратно в файл (захватывает мьютекс)
+func (s *Storage) saveHouses() error {
+	s.housesMutex.RLock()
+	defer s.housesMutex.RUnlock()
+	return s.saveHousesLocked()
 }
 
 // GetAllHouses возвращает все дома
@@ -102,14 +112,17 @@ func (s *Storage) GetHouse(id string) (*House, error) {
 func (s *Storage) AddHouse(house House) error {
 	s.housesMutex.Lock()
 	s.houses = append(s.houses, house)
+	err := s.saveHousesLocked()
 	s.housesMutex.Unlock()
 
-	return s.saveHouses()
+	return err
 }
 
 // UpdateHouse обновляет существующий дом
 func (s *Storage) UpdateHouse(id string, updated House) error {
 	s.housesMutex.Lock()
+	defer s.housesMutex.Unlock()
+
 	found := false
 	for i, h := range s.houses {
 		if h.ID == id {
@@ -118,17 +131,18 @@ func (s *Storage) UpdateHouse(id string, updated House) error {
 			break
 		}
 	}
-	s.housesMutex.Unlock() // разблокируем ДО записи в файл
 
 	if !found {
 		return fmt.Errorf("дом с ID %s не найден", id)
 	}
-	return s.saveHouses()
+	return s.saveHousesLocked()
 }
 
 // DeleteHouse удаляет дом по ID
 func (s *Storage) DeleteHouse(id string) error {
 	s.housesMutex.Lock()
+	defer s.housesMutex.Unlock()
+
 	found := false
 	for i, h := range s.houses {
 		if h.ID == id {
@@ -137,12 +151,11 @@ func (s *Storage) DeleteHouse(id string) error {
 			break
 		}
 	}
-	s.housesMutex.Unlock() // разблокируем ДО записи в файл
 
 	if !found {
 		return fmt.Errorf("дом с ID %s не найден", id)
 	}
-	return s.saveHouses()
+	return s.saveHousesLocked()
 }
 
 // calendarPath возвращает путь к файлу календаря для houseID
@@ -169,14 +182,20 @@ func (s *Storage) LoadCalendar(houseID string) (map[string]CalendarEntry, error)
 	return calendar, nil
 }
 
-// SaveCalendar сохраняет календарь для дома
+// SaveCalendar сохраняет календарь для дома (атомарно)
 func (s *Storage) SaveCalendar(houseID string, calendar map[string]CalendarEntry) error {
 	path := s.calendarPath(houseID)
 	data, err := json.MarshalIndent(calendar, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0644)
+
+	// Атомарная запись: пишем во временный файл, затем переименовываем
+	tmpPath := path + ".tmp"
+	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
+		return err
+	}
+	return os.Rename(tmpPath, path)
 }
 
 // UpdateCalendarEntry обновляет или добавляет запись в календаре

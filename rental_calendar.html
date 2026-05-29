@@ -352,6 +352,8 @@ async function loadCalendar(houseId) {
       const result = await resp.json();
       if (result.success && Array.isArray(result.data)) {
         result.data.forEach(e => {
+          // Проверяем, что дата существует в базовом календаре
+          // (отсекаем 31 число в месяцах, где 30 дней)
           if (cal[e.date] !== undefined) {
             cal[e.date] = { busy: e.is_booked, price: e.price };
           }
