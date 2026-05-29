@@ -63,5 +63,15 @@
     "date": "2026-06-15",
     "price": 8000,
     "is_booked": true
+  },
+  "2026-07-01": {
+    "date": "2026-07-01",
+    "price": 8500,
+    "is_booked": false
+  },
+  "2026-08-15": {
+    "date": "2026-08-15",
+    "price": 9000,
+    "is_booked": true
   }
 }
