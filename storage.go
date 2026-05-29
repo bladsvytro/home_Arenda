@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -19,6 +20,7 @@ type Storage struct {
 	housesMutex   sync.RWMutex
 	calendarMutex sync.Map // для каждого house_id свой sync.RWMutex
 	gitEnabled    bool
+	gitRepoDir    string // корень git-репозитория
 	gitMutex      sync.Mutex
 	gitPending    bool
 }
@@ -43,21 +45,28 @@ func NewStorage(dataDir string) (*Storage, error) {
 		return nil, fmt.Errorf("не удалось загрузить дома: %w", err)
 	}
 
-	// Проверяем, доступен ли git
-	s.gitEnabled = s.checkGit()
+	// Проверяем, доступен ли git, и находим корень репозитория
+	s.checkGit()
 
 	return s, nil
 }
 
-// checkGit проверяет, доступен ли git в системе
-func (s *Storage) checkGit() bool {
-	cmd := exec.Command("git", "rev-parse", "--git-dir")
-	cmd.Dir = filepath.Dir(s.housesPath)
-	if err := cmd.Run(); err != nil {
+// checkGit проверяет, доступен ли git, и находит корень репозитория
+func (s *Storage) checkGit() {
+	// Ищем корень git-репозитория, поднимаясь от data/ вверх
+	startDir := filepath.Dir(s.housesPath) // data/
+	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
+	cmd.Dir = startDir
+	out, err := cmd.Output()
+	if err != nil {
 		log.Printf("Git не доступен (%v), авто-коммиты отключены", err)
-		return false
+		s.gitEnabled = false
+		return
 	}
-	return true
+	// Сохраняем корень репозитория (убираем перевод строки)
+	s.gitRepoDir = strings.TrimSpace(string(out))
+	s.gitEnabled = true
+	log.Printf("Git доступен, корень репозитория: %s", s.gitRepoDir)
 }
 
 // gitCommitAndPush делает коммит и пуш изменений в git (асинхронно)
@@ -84,17 +93,15 @@ func (s *Storage) gitCommitAndPush() {
 		s.gitPending = false
 		s.gitMutex.Unlock()
 
-		repoDir := filepath.Dir(s.housesPath)
-
 		// git add
-		if err := s.gitExec(repoDir, "add", "-A", "data/"); err != nil {
+		if err := s.gitExec(s.gitRepoDir, "add", "-A", "data/"); err != nil {
 			log.Printf("Git add error: %v", err)
 			return
 		}
 
 		// Проверяем, есть ли изменения для коммита
 		statusCmd := exec.Command("git", "status", "--porcelain", "data/")
-		statusCmd.Dir = repoDir
+		statusCmd.Dir = s.gitRepoDir
 		output, _ := statusCmd.Output()
 		if len(output) == 0 {
 			return // нет изменений
@@ -102,14 +109,14 @@ func (s *Storage) gitCommitAndPush() {
 
 		// git commit
 		msg := fmt.Sprintf("auto-save: %s", time.Now().Format("2006-01-02 15:04:05"))
-		if err := s.gitExec(repoDir, "commit", "-m", msg); err != nil {
+		if err := s.gitExec(s.gitRepoDir, "commit", "-m", msg); err != nil {
 			log.Printf("Git commit error: %v", err)
 			return
 		}
 
 		// git push (синхронно, чтобы ошибки были видны в логах)
 		pushCmd := exec.Command("git", "push")
-		pushCmd.Dir = repoDir
+		pushCmd.Dir = s.gitRepoDir
 		pushOut, err := pushCmd.CombinedOutput()
 		if err != nil {
 			log.Printf("Git push error: %v\n%s", err, string(pushOut))
