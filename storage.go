@@ -107,16 +107,16 @@ func (s *Storage) gitCommitAndPush() {
 			return
 		}
 
-		// git push (в фоне, без ожидания)
-		go func() {
-			pushCmd := exec.Command("git", "push")
-			pushCmd.Dir = repoDir
-			if err := pushCmd.Run(); err != nil {
-				log.Printf("Git push error: %v", err)
-			}
-		}()
-
-		log.Println("Git: данные автоматически сохранены")
+		// git push (синхронно, чтобы ошибки были видны в логах)
+		pushCmd := exec.Command("git", "push")
+		pushCmd.Dir = repoDir
+		pushOut, err := pushCmd.CombinedOutput()
+		if err != nil {
+			log.Printf("Git push error: %v\n%s", err, string(pushOut))
+			return
+		}
+		log.Printf("Git push OK: %s", string(pushOut))
+		log.Println("Git: данные автоматически сохранены и отправлены")
 	}()
 }
 
