@@ -196,13 +196,6 @@ func (s *Storage) saveHousesLocked() error {
 	return nil
 }
 
-// saveHouses записывает дома обратно в файл (захватывает мьютекс)
-func (s *Storage) saveHouses() error {
-	s.housesMutex.RLock()
-	defer s.housesMutex.RUnlock()
-	return s.saveHousesLocked()
-}
-
 // GetAllHouses возвращает все дома
 func (s *Storage) GetAllHouses() []House {
 	s.housesMutex.RLock()

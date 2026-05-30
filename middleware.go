@@ -1,16 +1,26 @@
 package main
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"net/http"
+	"os"
 )
 
-const adminToken = "TolkachevaAdmin2020" // ASCII-токен для HTTP-заголовков
+// adminToken читается из переменной окружения ADMIN_TOKEN.
+// Если переменная не задана — используется значение по умолчанию (для локальной разработки).
+// На проде обязательно задайте ADMIN_TOKEN, чтобы токен не лежал в коде/гите.
+var adminToken = func() string {
+	if t := os.Getenv("ADMIN_TOKEN"); t != "" {
+		return t
+	}
+	return "TolkachevaAdmin2020" // запасной токен для локального запуска
+}()
 
-// isAdmin проверяет заголовок X-Admin-Token
+// isAdmin проверяет заголовок X-Admin-Token (сравнение в постоянном времени).
 func isAdmin(r *http.Request) bool {
 	token := r.Header.Get("X-Admin-Token")
-	return token == adminToken
+	return subtle.ConstantTimeCompare([]byte(token), []byte(adminToken)) == 1
 }
 
 // adminMiddleware проверяет авторизацию для методов, требующих прав администратора

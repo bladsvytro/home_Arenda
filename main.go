@@ -17,8 +17,8 @@ func main() {
 	// Инициализируем обработчики
 	handlers := NewHandlers(storage)
 
-	// Регистрируем обработчики напрямую в http.DefaultServeMux
-	http.HandleFunc("/api/houses", func(w http.ResponseWriter, r *http.Request) {
+	// Все API-роуты оборачиваем в corsMiddleware (CORS-заголовки + обработка OPTIONS).
+	http.HandleFunc("/api/houses", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			handlers.GetAllHousesHandler(w, r)
@@ -31,9 +31,9 @@ func main() {
 				Error:   "метод не поддерживается",
 			})
 		}
-	})
+	}))
 
-	http.HandleFunc("/api/houses/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/api/houses/", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			handlers.GetHouseHandler(w, r)
@@ -48,11 +48,11 @@ func main() {
 				Error:   "метод не поддерживается",
 			})
 		}
-	})
+	}))
 
-	http.HandleFunc("/api/upload/", handlers.UploadPhotoHandler)
+	http.HandleFunc("/api/upload/", corsMiddleware(handlers.UploadPhotoHandler))
 
-	http.HandleFunc("/api/calendar/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/api/calendar/", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			handlers.GetCalendarHandler(w, r)
@@ -65,9 +65,9 @@ func main() {
 				Error:   "метод не поддерживается",
 			})
 		}
-	})
+	}))
 
-	http.HandleFunc("/api/calendar_range/", handlers.GetCalendarRangeHandler)
+	http.HandleFunc("/api/calendar_range/", corsMiddleware(handlers.GetCalendarRangeHandler))
 
 	// Отладочный эндпоинт
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
@@ -78,25 +78,35 @@ func main() {
 	os.MkdirAll("uploads", 0755)
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
 
-	// Статический фронтенд
+	// Статический фронтенд.
+	// Главная страница (/ и /index.html) всегда отдаёт rental.html —
+	// единственный источник правды для фронтенда. Остальные пути (css, js,
+	// картинки) обслуживает обычный файловый сервер.
 	fs := http.FileServer(http.Dir("."))
-	http.Handle("/", fs)
-
-	// Переименуем rental.html в index.html для удобства
-	http.HandleFunc("/index.html", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "rental.html")
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" || r.URL.Path == "/index.html" {
+			w.Header().Set("Cache-Control", "no-cache")
+			http.ServeFile(w, r, "rental.html")
+			return
+		}
+		fs.ServeHTTP(w, r)
 	})
 
+	// Порт берётся из переменной окружения PORT (по умолчанию 8080)
 	port := ":8080"
+	if p := os.Getenv("PORT"); p != "" {
+		port = ":" + p
+	}
 	log.Printf("Сервер запущен на порту %s", port)
 	log.Printf("Доступные эндпоинты:")
 	log.Printf("  GET  /api/houses")
 	log.Printf("  GET  /api/houses/{id}")
 	log.Printf("  GET  /api/calendar/{house_id}?month=YYYY-MM")
 	log.Printf("  GET  /api/calendar_range/{house_id}?from=YYYY-MM-DD&to=YYYY-MM-DD")
-	log.Printf("  POST /api/houses (требует X-Admin-Token: secret)")
-	log.Printf("  PUT  /api/calendar/{house_id} (требует X-Admin-Token: secret)")
-	log.Printf("  DELETE /api/houses/{id} (требует X-Admin-Token: secret)")
+	log.Printf("  POST /api/houses (требует заголовок X-Admin-Token)")
+	log.Printf("  PUT  /api/calendar/{house_id} (требует заголовок X-Admin-Token)")
+	log.Printf("  DELETE /api/houses/{id} (требует заголовок X-Admin-Token)")
+	log.Printf("Admin-токен берётся из переменной окружения ADMIN_TOKEN")
 	log.Printf("Фронтенд доступен по адресу http://localhost%s/", port)
 
 	if err := http.ListenAndServe(port, nil); err != nil {

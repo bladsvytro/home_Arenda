@@ -64,9 +64,9 @@ func (h *Handlers) GetAllHousesHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetHouseHandler возвращает один дом по ID
 func (h *Handlers) GetHouseHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/houses/")
+	id := sanitizeID(strings.TrimPrefix(r.URL.Path, "/api/houses/"))
 	if id == "" {
-		writeError(w, http.StatusBadRequest, "ID дома не указан")
+		writeError(w, http.StatusBadRequest, "недопустимый ID дома")
 		return
 	}
 
@@ -144,9 +144,16 @@ func (h *Handlers) UpdateHouseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := strings.TrimPrefix(r.URL.Path, "/api/houses/")
+	id := sanitizeID(strings.TrimPrefix(r.URL.Path, "/api/houses/"))
 	if id == "" {
-		writeError(w, http.StatusBadRequest, "ID дома не указан")
+		writeError(w, http.StatusBadRequest, "недопустимый ID дома")
+		return
+	}
+
+	// Проверяем, что дом существует, ДО любых операций с файлами,
+	// иначе фото переместятся в директорию несуществующего дома (orphan).
+	if _, err := h.storage.GetHouse(id); err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
 
@@ -204,9 +211,12 @@ func (h *Handlers) UploadPhotoHandler(w http.ResponseWriter, r *http.Request) {
 	if houseID == "" {
 		houseID = "temp"
 	}
-	// Sanitize houseID
-	houseID = strings.ReplaceAll(houseID, "..", "")
-	houseID = strings.ReplaceAll(houseID, "/", "")
+	// Проверяем ID на безопасность (защита от обхода каталогов)
+	houseID = sanitizeID(houseID)
+	if houseID == "" {
+		writeError(w, http.StatusBadRequest, "недопустимый идентификатор дома")
+		return
+	}
 
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		writeError(w, http.StatusBadRequest, "ошибка парсинга формы: "+err.Error())
@@ -219,6 +229,13 @@ func (h *Handlers) UploadPhotoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
+
+	// Ограничиваем размер одного файла 10 МБ
+	const maxPhotoSize = 10 << 20
+	if header.Size > maxPhotoSize {
+		writeError(w, http.StatusBadRequest, "файл слишком большой (макс. 10 МБ)")
+		return
+	}
 
 	// Проверяем расширение
 	ext := strings.ToLower(filepath.Ext(header.Filename))
@@ -263,9 +280,9 @@ func (h *Handlers) DeleteHouseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := strings.TrimPrefix(r.URL.Path, "/api/houses/")
+	id := sanitizeID(strings.TrimPrefix(r.URL.Path, "/api/houses/"))
 	if id == "" {
-		writeError(w, http.StatusBadRequest, "ID дома не указан")
+		writeError(w, http.StatusBadRequest, "недопустимый ID дома")
 		return
 	}
 
@@ -293,7 +310,11 @@ func (h *Handlers) GetCalendarHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "неверный путь")
 		return
 	}
-	houseID := pathParts[3]
+	houseID := sanitizeID(pathParts[3])
+	if houseID == "" {
+		writeError(w, http.StatusBadRequest, "недопустимый идентификатор дома")
+		return
+	}
 
 	month := r.URL.Query().Get("month")
 	if month == "" {
@@ -343,7 +364,11 @@ func (h *Handlers) UpdateCalendarHandler(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "неверный путь")
 		return
 	}
-	houseID := pathParts[3]
+	houseID := sanitizeID(pathParts[3])
+	if houseID == "" {
+		writeError(w, http.StatusBadRequest, "недопустимый идентификатор дома")
+		return
+	}
 
 	var update CalendarUpdate
 	if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
@@ -387,7 +412,11 @@ func (h *Handlers) GetCalendarRangeHandler(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "неверный путь")
 		return
 	}
-	houseID := pathParts[3]
+	houseID := sanitizeID(pathParts[3])
+	if houseID == "" {
+		writeError(w, http.StatusBadRequest, "недопустимый идентификатор дома")
+		return
+	}
 
 	from := r.URL.Query().Get("from")
 	to := r.URL.Query().Get("to")

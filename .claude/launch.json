@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "rental",
+      "runtimeExecutable": "./rental-server.exe",
+      "runtimeArgs": [],
+      "port": 8080,
+      "autoPort": true
+    }
+  ]
+}
