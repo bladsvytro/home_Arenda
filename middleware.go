@@ -2,25 +2,42 @@ package main
 
 import (
 	"crypto/subtle"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"os"
 )
 
-// adminToken читается из переменной окружения ADMIN_TOKEN.
-// Если переменная не задана — используется значение по умолчанию (для локальной разработки).
-// На проде обязательно задайте ADMIN_TOKEN, чтобы токен не лежал в коде/гите.
+// adminToken — секрет администратора. По умолчанию «Толкачёва2020».
+// Можно переопределить переменной окружения ADMIN_TOKEN.
 var adminToken = func() string {
 	if t := os.Getenv("ADMIN_TOKEN"); t != "" {
 		return t
 	}
-	return "TolkachevaAdmin2020" // запасной токен для локального запуска
+	return "Толкачёва2020"
 }()
 
-// isAdmin проверяет заголовок X-Admin-Token (сравнение в постоянном времени).
+// isAdmin проверяет заголовок X-Admin-Token.
+// В HTTP-заголовках нельзя передавать не-ASCII символы (кириллицу), поэтому
+// фронтенд шлёт токен в base64 (UTF-8). Принимаем оба варианта: и сырой токен
+// (для curl/Postman при ASCII-токене), и base64-кодированный.
 func isAdmin(r *http.Request) bool {
-	token := r.Header.Get("X-Admin-Token")
-	return subtle.ConstantTimeCompare([]byte(token), []byte(adminToken)) == 1
+	got := r.Header.Get("X-Admin-Token")
+	if got == "" {
+		return false
+	}
+	want := []byte(adminToken)
+	// 1) Прямое совпадение (если токен ASCII и прислан как есть)
+	if subtle.ConstantTimeCompare([]byte(got), want) == 1 {
+		return true
+	}
+	// 2) Совпадение после декодирования base64 (кириллический токен из браузера)
+	if dec, err := base64.StdEncoding.DecodeString(got); err == nil {
+		if subtle.ConstantTimeCompare(dec, want) == 1 {
+			return true
+		}
+	}
+	return false
 }
 
 // adminMiddleware проверяет авторизацию для методов, требующих прав администратора

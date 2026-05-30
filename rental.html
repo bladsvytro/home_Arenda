@@ -917,8 +917,37 @@ async function loadHouses() {
 }
 
 function saveHouses(houses) {
-  // не используется, оставлена для совместимости
-  console.warn('saveHouses deprecated, use API directly');
+  // больше не используется — все изменения идут напрямую в API
+}
+
+/* ================================================================
+   API-ХЕЛПЕРЫ (авторизация + формат дат)
+   ================================================================ */
+// Секрет администратора. Должен совпадать с ADMIN_TOKEN на сервере.
+const ADMIN_SECRET = 'Толкачёва2020';
+
+// Кириллицу нельзя слать в HTTP-заголовке напрямую (только ISO-8859-1),
+// поэтому кодируем токен в base64 (UTF-8). Сервер декодирует и сверяет.
+function b64utf8(s) {
+  return btoa(String.fromCharCode.apply(null, new TextEncoder().encode(s)));
+}
+
+// Заголовки для admin-запросов
+function adminHeaders(json) {
+  const h = { 'X-Admin-Token': b64utf8(ADMIN_SECRET) };
+  if (json) h['Content-Type'] = 'application/json';
+  return h;
+}
+
+// Внутренние ключи календаря используют 0-based месяц (dayKey с getMonth()),
+// а сервер хранит реальные ISO-даты (1-based). Конвертируем на границе API.
+function keyToISO(key) {   // "2026-04-15" (внутр., май) → "2026-05-15" (ISO)
+  const [y, m, d] = key.split('-').map(Number);
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+function isoToKey(iso) {   // обратное преобразование
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${y}-${String(m - 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
 let houses = [];
@@ -1292,7 +1321,7 @@ function initAdmin() {
   document.getElementById('adminCalendarWrap').innerHTML = '';
 }
 
-function deleteSelectedHouse() {
+async function deleteSelectedHouse() {
   const sel = document.getElementById('adminHouseSelect');
   const id = sel.value;
   if (!id) {
@@ -1300,14 +1329,27 @@ function deleteSelectedHouse() {
     return;
   }
   if (!confirm('Вы уверены, что хотите удалить этот объект?')) return;
-  const index = houses.findIndex(h => h.id === id);
-  if (index !== -1) {
-    houses.splice(index, 1);
-    saveHouses(houses);
-    initAdmin(); // обновить список
-    renderCards(); // обновить каталог
-    showToast('Объект удалён');
+
+  try {
+    const resp = await fetch('/api/houses/' + id, {
+      method: 'DELETE', headers: adminHeaders(false)
+    });
+    const result = await resp.json();
+    if (!resp.ok || !result.success) {
+      showToast('Ошибка: ' + (result.error || ('HTTP ' + resp.status)));
+      return;
+    }
+  } catch (e) {
+    showToast('Сеть недоступна: ' + e.message);
+    return;
   }
+
+  const index = houses.findIndex(h => h.id === id);
+  if (index !== -1) houses.splice(index, 1);
+  document.getElementById('adminCalendarWrap').innerHTML = '';
+  initAdmin();   // обновить список
+  renderCards(); // обновить каталог
+  showToast('Объект удалён');
 }
 
 let editingHouseId = null;
@@ -1336,28 +1378,49 @@ function editSelectedHouse() {
   showToast('Загружены данные для редактирования. Измените поля и нажмите "Обновить объект".');
 }
 
-function updateHouse() {
+async function updateHouse() {
   if (!editingHouseId) return;
   const house = houses.find(h => h.id === editingHouseId);
   if (!house) return;
-  // Обновляем данные
-  house.name = document.getElementById('newTitle').value.trim();
-  house.area = document.getElementById('newLocation').value.trim();
-  house.base_price = parseInt(document.getElementById('newPrice').value) || 150;
-  house.description = document.getElementById('newDesc').value.trim();
-  house.amenities = document.getElementById('newAmenities').value.split(',').map(s => s.trim()).filter(Boolean);
-  house.photos = document.getElementById('newPhotos').value.split('\n').map(s => s.trim()).filter(Boolean);
-  // Если фото пусто, оставляем дефолтное
-  if (house.photos.length === 0) {
-    house.photos = ['https://picsum.photos/seed/' + house.id + '/800/600'];
+
+  let photos = document.getElementById('newPhotos').value.split('\n').map(s => s.trim()).filter(Boolean);
+  if (photos.length === 0) {
+    photos = ['https://picsum.photos/seed/' + house.id + '/800/600'];
   }
-  saveHouses(houses);
+  const payload = {
+    name: document.getElementById('newTitle').value.trim(),
+    area: document.getElementById('newLocation').value.trim(),
+    base_price: parseInt(document.getElementById('newPrice').value) || 150,
+    description: document.getElementById('newDesc').value.trim(),
+    amenities: document.getElementById('newAmenities').value.split(',').map(s => s.trim()).filter(Boolean),
+    photos
+  };
+
+  try {
+    const resp = await fetch('/api/houses/' + editingHouseId, {
+      method: 'PUT', headers: adminHeaders(true), body: JSON.stringify(payload)
+    });
+    const result = await resp.json();
+    if (!resp.ok || !result.success) {
+      showToast('Ошибка: ' + (result.error || ('HTTP ' + resp.status)));
+      return;
+    }
+    // Обновляем локальный объект данными с сервера (сохраняя загруженный календарь)
+    Object.assign(house, result.data);
+  } catch (e) {
+    showToast('Сеть недоступна: ' + e.message);
+    return;
+  }
+
   // Возвращаем кнопку в исходное состояние
   const btn = document.getElementById('addHouseBtn');
   btn.textContent = 'Добавить объект';
   btn.onclick = addHouse;
   editingHouseId = null;
-  // Обновляем интерфейс
+  // Очищаем форму и обновляем интерфейс
+  ['newTitle','newLocation','newPrice','newDesc','newAmenities','newPhotos'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
   initAdmin();
   renderCards();
   showToast('Объект обновлён');
@@ -1423,33 +1486,47 @@ function monthName(month) {
 }
 
 // ==================== АДМИН-КАЛЕНДАРЬ ====================
-function initAdminCalendar(house) {
-  console.log('initAdminCalendar', house);
+async function initAdminCalendar(house) {
   if (!house) return;
   adminHouse = house;
   adminBasePrice = house.base_price || 150;
-  // Строим adminCAL на основе house.calendar и базовой цены
+  // Базовый календарь на 24 месяца вперёд с ценой по умолчанию
   const cal = {};
   const now = new Date();
-  // Заполняем на 24 месяца вперед (два года) для покрытия навигации
   for (let m = 0; m < 24; m++) {
     const y = now.getFullYear() + Math.floor((now.getMonth() + m) / 12);
     const mo = (now.getMonth() + m) % 12;
     const days = new Date(y, mo + 1, 0).getDate();
     for (let d = 1; d <= days; d++) {
       const key = `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const entry = house.calendar ? house.calendar[key] : null;
-      const busy = entry ? entry.busy : false;
-      const price = entry ? entry.price : adminBasePrice;
-      cal[key] = { busy, price };
+      cal[key] = { busy: false, price: adminBasePrice };
     }
   }
+
+  // Загружаем сохранённые на сервере данные и накладываем поверх
+  const from = dayKey(now.getFullYear(), now.getMonth(), 1);
+  const endD = new Date(now.getFullYear() + 2, now.getMonth(), 0);
+  const to   = dayKey(endD.getFullYear(), endD.getMonth(), endD.getDate());
+  try {
+    const resp = await fetch(`/api/calendar_range/${house.id}?from=${keyToISO(from)}&to=${keyToISO(to)}`);
+    if (resp.ok) {
+      const result = await resp.json();
+      if (result.success && Array.isArray(result.data)) {
+        result.data.forEach(e => {
+          const key = isoToKey(e.date);
+          if (cal[key] !== undefined) cal[key] = { busy: e.is_booked, price: e.price };
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('Admin calendar load error:', err);
+  }
+
   adminCAL = cal;
   adminStartOffset = 0;
   adminViewCount = 1;
   adminSel1 = null;
   adminSel2 = null;
-  console.log('adminCAL size', Object.keys(cal).length);
   adminRender();
 }
 
@@ -1606,16 +1683,32 @@ function closePopup() {
   popupKey = null;
 }
 
-function saveDay() {
+async function saveDay() {
   if (!popupHouseId || !popupKey) return;
   const price = parseInt(document.getElementById('popupPrice').value) || 0;
   const busy  = document.getElementById('popupBusy').checked;
 
+  try {
+    const resp = await fetch('/api/calendar/' + popupHouseId, {
+      method: 'PUT', headers: adminHeaders(true),
+      body: JSON.stringify({ date: keyToISO(popupKey), price, is_booked: busy })
+    });
+    const result = await resp.json();
+    if (!resp.ok || !result.success) {
+      showToast('Ошибка: ' + (result.error || ('HTTP ' + resp.status)));
+      return;
+    }
+  } catch (e) {
+    showToast('Сеть недоступна: ' + e.message);
+    return;
+  }
+
+  // Обновляем локальное состояние и перерисовываем без перезагрузки
+  adminCAL[popupKey] = { busy, price };
   const h = houses.find(x => x.id === popupHouseId);
-  h.calendar[popupKey] = { busy, price };
-  saveHouses(houses);
+  if (h) { if (!h.calendar) h.calendar = {}; h.calendar[popupKey] = { busy, price }; }
   closePopup();
-  renderAdminCalendar();
+  adminRender();
   showToast('Изменения сохранены');
 }
 
@@ -1626,37 +1719,44 @@ document.addEventListener('click', e => {
   }
 });
 
-/* Add house */
-function addHouse() {
-  const title    = document.getElementById('newTitle').value.trim();
-  const location = document.getElementById('newLocation').value.trim();
-  const price    = parseInt(document.getElementById('newPrice').value) || 100;
-  const desc     = document.getElementById('newDesc').value.trim();
-  const amenStr  = document.getElementById('newAmenities').value.trim();
-  const photosStr= document.getElementById('newPhotos').value.trim();
+/* Add house — сохраняется на сервере и в git */
+async function addHouse() {
+  const name       = document.getElementById('newTitle').value.trim();
+  const area       = document.getElementById('newLocation').value.trim();
+  const base_price = parseInt(document.getElementById('newPrice').value) || 100;
+  const desc       = document.getElementById('newDesc').value.trim();
+  const amenStr    = document.getElementById('newAmenities').value.trim();
+  const photosStr  = document.getElementById('newPhotos').value.trim();
 
-  if (!title) { showToast('Введите название объекта'); return; }
+  if (!name) { showToast('Введите название объекта'); return; }
 
   const amenities = amenStr ? amenStr.split(',').map(s => s.trim()).filter(Boolean) : [];
   const photos    = photosStr ? photosStr.split('\n').map(s => s.trim()).filter(Boolean)
                               : ['https://picsum.photos/seed/new' + Date.now() + '/800/600'];
 
-  const newHouse = {
-    id: 'h' + Date.now(),
-    title, location, price, description: desc || 'Описание скоро появится.',
-    amenities, photos, calendar: {}
-  };
+  const payload = { name, area, base_price, photos, description: desc || 'Описание скоро появится.', amenities };
 
-  houses.push(newHouse);
-  saveHouses(houses);
+  try {
+    const resp = await fetch('/api/houses', {
+      method: 'POST', headers: adminHeaders(true), body: JSON.stringify(payload)
+    });
+    const result = await resp.json();
+    if (!resp.ok || !result.success) {
+      showToast('Ошибка: ' + (result.error || ('HTTP ' + resp.status)));
+      return;
+    }
+    // Сервер вернул объект с присвоенным id — добавляем в локальный список
+    houses.push({ ...result.data, calendar: {} });
 
-  // Reset form
-  ['newTitle','newLocation','newPrice','newDesc','newAmenities','newPhotos'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-
-  initAdmin();
-  showToast('Объект добавлен: ' + title);
+    ['newTitle','newLocation','newPrice','newDesc','newAmenities','newPhotos'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    initAdmin();
+    renderCards();
+    showToast('Объект добавлен: ' + name);
+  } catch (e) {
+    showToast('Сеть недоступна: ' + e.message);
+  }
 }
 
 /* ================================================================
@@ -1840,13 +1940,14 @@ async function initCalendar(house) {
   const endD = new Date(now.getFullYear() + 2, now.getMonth(), 0);
   const to   = dayKey(endD.getFullYear(), endD.getMonth(), endD.getDate());
   try {
-    const resp = await fetch(`/api/calendar_range/${house.id}?from=${from}&to=${to}`);
+    const resp = await fetch(`/api/calendar_range/${house.id}?from=${keyToISO(from)}&to=${keyToISO(to)}`);
     if (resp.ok) {
       const result = await resp.json();
       if (result.success && Array.isArray(result.data)) {
         result.data.forEach(e => {
-          if (cal[e.date] !== undefined) {
-            cal[e.date] = { busy: e.is_booked, price: e.price };
+          const key = isoToKey(e.date); // ISO с сервера → внутренний 0-based ключ
+          if (cal[key] !== undefined) {
+            cal[key] = { busy: e.is_booked, price: e.price };
           }
         });
       }

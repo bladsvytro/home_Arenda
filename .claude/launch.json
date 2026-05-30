@@ -5,7 +5,7 @@
       "name": "rental",
       "runtimeExecutable": "./rental-server.exe",
       "runtimeArgs": [],
-      "port": 8080,
+      "port": 8181,
       "autoPort": true
     }
   ]
