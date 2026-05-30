@@ -813,35 +813,32 @@ const DEFAULT_HOUSES = [
   }
 ];
 
-// Seed calendar for house 1 (October 2026)
+// Seed calendar for house 1 (Sep-Oct 2026)
 function seedCalendar1(cal) {
   const year = 2026;
-  // Oct: busy 5-10, 15-20
-  for (let d = 1; d <= 31; d++) {
-    const key = `${year}-09-${String(d).padStart(2,'0')}`; // Oct is month index 9
-    const busy = (d >= 5 && d <= 10) || (d >= 15 && d <= 20);
-    if (busy) {
-      cal[`2026-09-${String(d).padStart(2,'0')}`] = { busy: true, price: 0 };
-    } else if (d >= 1 && d <= 31) {
-      const price = 120 + Math.floor((d * 7) % 61);
-      cal[`2026-09-${String(d).padStart(2,'0')}`] = { busy: false, price };
-    }
-  }
-  // Nov
+  // Sep (30 дней): busy 5-10, 15-20
   for (let d = 1; d <= 30; d++) {
+    const busy = (d >= 5 && d <= 10) || (d >= 15 && d <= 20);
+    const price = 120 + Math.floor((d * 7) % 61);
+    cal[`2026-09-${String(d).padStart(2,'0')}`] = busy ? { busy: true, price: 0 } : { busy: false, price };
+  }
+  // Oct (31 день)
+  for (let d = 1; d <= 31; d++) {
     const price = 130 + Math.floor((d * 11) % 51);
     cal[`2026-10-${String(d).padStart(2,'0')}`] = { busy: false, price };
   }
   return cal;
 }
 
-// Seed calendar for house 2 (November 2026, busy 12-14)
+// Seed calendar for house 2 (Sep-Oct 2026, busy 12-14)
 function seedCalendar2(cal) {
-  for (let d = 1; d <= 31; d++) {
+  // Sep (30 дней)
+  for (let d = 1; d <= 30; d++) {
     const price = 100 + Math.floor((d * 9) % 41);
     cal[`2026-09-${String(d).padStart(2,'0')}`] = { busy: false, price };
   }
-  for (let d = 1; d <= 30; d++) {
+  // Oct (31 день): busy 12-14
+  for (let d = 1; d <= 31; d++) {
     const busy = d >= 12 && d <= 14;
     cal[`2026-10-${String(d).padStart(2,'0')}`] = busy ? { busy: true, price: 0 } : { busy: false, price: 100 + Math.floor((d * 13) % 51) };
   }

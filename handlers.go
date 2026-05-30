@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -107,12 +108,20 @@ func (h *Handlers) CreateHouseHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Генерируем ID (простой способ)
 	id := fmt.Sprintf("h%d", time.Now().UnixNano())
+
+	// Перемещаем temp-фото в постоянную директорию дома
+	photos, err := h.storage.MovePhotosFromTemp(id, input.Photos)
+	if err != nil {
+		log.Printf("Предупреждение: не удалось переместить фото: %v", err)
+		photos = input.Photos
+	}
+
 	house := House{
 		ID:          id,
 		Name:        input.Name,
 		Area:        input.Area,
 		BasePrice:   input.BasePrice,
-		Photos:      input.Photos,
+		Photos:      photos,
 		Description: input.Description,
 		Amenities:   input.Amenities,
 	}
@@ -156,12 +165,19 @@ func (h *Handlers) UpdateHouseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Перемещаем temp-фото в постоянную директорию дома (если есть новые)
+	photos, err := h.storage.MovePhotosFromTemp(id, input.Photos)
+	if err != nil {
+		log.Printf("Предупреждение: не удалось переместить фото при обновлении: %v", err)
+		photos = input.Photos
+	}
+
 	updated := House{
 		ID:          id,
 		Name:        input.Name,
 		Area:        input.Area,
 		BasePrice:   input.BasePrice,
-		Photos:      input.Photos,
+		Photos:      photos,
 		Description: input.Description,
 		Amenities:   input.Amenities,
 	}
@@ -257,6 +273,11 @@ func (h *Handlers) DeleteHouseHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
+
+	// Удаляем фото и календарь дома асинхронно.
+	// Запускаем после ответа, чтобы не задерживать клиента.
+	// gitCommitAndPush внутри подберёт все изменения разом.
+	go h.storage.DeleteHouseFiles(id)
 
 	writeJSON(w, http.StatusOK, Response{
 		Success: true,

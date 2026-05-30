@@ -7,11 +7,6 @@
 *.log
 stderr.txt
 stdout.txt
-
-# Data files (можно включить, но лучше хранить отдельно)
-data/calendar/*.json
-data/houses.json
-
 # IDE
 .vscode/
 .idea/
@@ -22,7 +17,11 @@ Thumbs.db
 
 # Temporary files
 tmp/
-temp/
+uploads/temp/
+
+# Uploads — отслеживаем все папки домов, но не временные файлы
+# uploads/ — tracked by git (photos per house)
+# uploads/temp/ — ignored (staging area before house is created)
 
 # Go
 go.sum

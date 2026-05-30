@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -93,14 +94,14 @@ func (s *Storage) gitCommitAndPush() {
 		s.gitPending = false
 		s.gitMutex.Unlock()
 
-		// git add
-		if err := s.gitExec(s.gitRepoDir, "add", "-A", "data/"); err != nil {
+		// git add — включаем данные И фотографии (temp/ игнорируется через .gitignore)
+		if err := s.gitExec(s.gitRepoDir, "add", "-A", "--", "data/", "uploads/"); err != nil {
 			log.Printf("Git add error: %v", err)
 			return
 		}
 
 		// Проверяем, есть ли изменения для коммита
-		statusCmd := exec.Command("git", "status", "--porcelain", "data/")
+		statusCmd := exec.Command("git", "status", "--porcelain", "--", "data/", "uploads/")
 		statusCmd.Dir = s.gitRepoDir
 		output, _ := statusCmd.Output()
 		if len(output) == 0 {
@@ -339,4 +340,77 @@ func (s *Storage) GetCalendarRange(houseID, from, to string) ([]CalendarEntry, e
 		}
 	}
 	return result, nil
+}
+
+// MovePhotosFromTemp перемещает фотографии из uploads/temp/ в uploads/{houseID}/.
+// Возвращает обновлённые URL (temp-ссылки заменяются на постоянные).
+func (s *Storage) MovePhotosFromTemp(houseID string, photos []string) ([]string, error) {
+	houseDir := filepath.Join("uploads", houseID)
+	if err := os.MkdirAll(houseDir, 0755); err != nil {
+		return nil, fmt.Errorf("не удалось создать директорию дома: %w", err)
+	}
+
+	updated := make([]string, len(photos))
+	for i, photo := range photos {
+		// Обрабатываем только локальные temp-фото
+		if !strings.HasPrefix(photo, "/uploads/temp/") {
+			updated[i] = photo
+			continue
+		}
+		filename := filepath.Base(photo)
+		srcPath := filepath.Join("uploads", "temp", filename)
+		dstPath := filepath.Join(houseDir, filename)
+
+		// Пробуем переименовать; если не выходит (разные тома) — копируем
+		if err := os.Rename(srcPath, dstPath); err != nil {
+			if copyErr := copyFile(srcPath, dstPath); copyErr != nil {
+				log.Printf("Не удалось переместить фото %s: %v", filename, copyErr)
+				updated[i] = photo // оставляем старый URL при ошибке
+				continue
+			}
+			os.Remove(srcPath)
+		}
+		updated[i] = fmt.Sprintf("/uploads/%s/%s", houseID, filename)
+	}
+	return updated, nil
+}
+
+// copyFile копирует содержимое файла src в dst (используется как fallback для Rename).
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	return err
+}
+
+// DeleteHouseFiles удаляет фотографии и файл календаря для дома.
+// Нужно вызывать ПОСЛЕ удаления дома из JSON (чтобы git-коммит захватил оба изменения).
+func (s *Storage) DeleteHouseFiles(houseID string) {
+	// Удаляем директорию с фотографиями
+	photoDir := filepath.Join("uploads", houseID)
+	if err := os.RemoveAll(photoDir); err != nil {
+		log.Printf("Не удалось удалить фото дома %s: %v", houseID, err)
+	} else {
+		log.Printf("Удалена папка с фото дома %s", houseID)
+	}
+
+	// Удаляем файл календаря
+	calPath := s.calendarPath(houseID)
+	if err := os.Remove(calPath); err != nil && !os.IsNotExist(err) {
+		log.Printf("Не удалось удалить календарь дома %s: %v", houseID, err)
+	}
+
+	// Запускаем коммит: к этому моменту дом уже удалён из houses.json
+	// и файлы удалены — git add подберёт все изменения разом
+	s.gitCommitAndPush()
 }
