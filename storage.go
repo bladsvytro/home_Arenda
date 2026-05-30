@@ -21,9 +21,8 @@ type Storage struct {
 	housesMutex   sync.RWMutex
 	calendarMutex sync.Map // для каждого house_id свой sync.RWMutex
 	gitEnabled    bool
-	gitRepoDir    string // корень git-репозитория
-	gitMutex      sync.Mutex
-	gitPending    bool
+	gitRepoDir    string       // корень git-репозитория
+	gitSignal     chan struct{} // буферизованный канал — debounce-сигнал для воркера
 }
 
 // NewStorage создаёт новый Storage и загружает данные
@@ -37,8 +36,9 @@ func NewStorage(dataDir string) (*Storage, error) {
 	}
 
 	s := &Storage{
-		housesPath:  housesPath,
+		housesPath: housesPath,
 		calendarDir: calendarDir,
+		gitSignal:  make(chan struct{}, 1), // буфер 1: если сигнал уже есть — дубль не нужен
 	}
 
 	// Загружаем дома
@@ -52,9 +52,8 @@ func NewStorage(dataDir string) (*Storage, error) {
 	return s, nil
 }
 
-// checkGit проверяет, доступен ли git, и находит корень репозитория
+// checkGit проверяет, доступен ли git, находит корень репозитория и запускает воркер.
 func (s *Storage) checkGit() {
-	// Ищем корень git-репозитория, поднимаясь от data/ вверх
 	startDir := filepath.Dir(s.housesPath) // data/
 	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
 	cmd.Dir = startDir
@@ -64,75 +63,92 @@ func (s *Storage) checkGit() {
 		s.gitEnabled = false
 		return
 	}
-	// Сохраняем корень репозитория (убираем перевод строки)
 	s.gitRepoDir = strings.TrimSpace(string(out))
 	s.gitEnabled = true
 	log.Printf("Git доступен, корень репозитория: %s", s.gitRepoDir)
+
+	// Запускаем единственный фоновый воркер для git-операций.
+	// Все коммиты проходят через него строго по очереди — гонок нет.
+	go s.gitWorker()
 }
 
-// gitCommitAndPush делает коммит и пуш изменений в git (асинхронно)
+// gitCommitAndPush сигнализирует воркеру о наличии изменений.
+// Не блокирует — возврат мгновенный. Несколько вызовов подряд схлопываются в один коммит.
 func (s *Storage) gitCommitAndPush() {
 	if !s.gitEnabled {
 		return
 	}
-
-	s.gitMutex.Lock()
-	// Если уже есть ожидающий коммит, не создаём новый
-	if s.gitPending {
-		s.gitMutex.Unlock()
-		return
+	// Отправляем сигнал в буферизованный канал.
+	// Если сигнал уже лежит (буфер заполнен) — молча пропускаем дубль.
+	select {
+	case s.gitSignal <- struct{}{}:
+	default:
 	}
-	s.gitPending = true
-	s.gitMutex.Unlock()
-
-	// Запускаем асинхронно, чтобы не блокировать ответ API
-	go func() {
-		// Небольшая задержка, чтобы собрать несколько изменений в один коммит
-		time.Sleep(2 * time.Second)
-
-		s.gitMutex.Lock()
-		s.gitPending = false
-		s.gitMutex.Unlock()
-
-		// git add — включаем данные И фотографии (temp/ игнорируется через .gitignore)
-		if err := s.gitExec(s.gitRepoDir, "add", "-A", "--", "data/", "uploads/"); err != nil {
-			log.Printf("Git add error: %v", err)
-			return
-		}
-
-		// Проверяем, есть ли изменения для коммита
-		statusCmd := exec.Command("git", "status", "--porcelain", "--", "data/", "uploads/")
-		statusCmd.Dir = s.gitRepoDir
-		output, _ := statusCmd.Output()
-		if len(output) == 0 {
-			return // нет изменений
-		}
-
-		// git commit
-		msg := fmt.Sprintf("auto-save: %s", time.Now().Format("2006-01-02 15:04:05"))
-		if err := s.gitExec(s.gitRepoDir, "commit", "-m", msg); err != nil {
-			log.Printf("Git commit error: %v", err)
-			return
-		}
-
-		// git push (синхронно, чтобы ошибки были видны в логах)
-		pushCmd := exec.Command("git", "push")
-		pushCmd.Dir = s.gitRepoDir
-		pushOut, err := pushCmd.CombinedOutput()
-		if err != nil {
-			log.Printf("Git push error: %v\n%s", err, string(pushOut))
-			return
-		}
-		log.Printf("Git push OK: %s", string(pushOut))
-		log.Println("Git: данные автоматически сохранены и отправлены")
-	}()
 }
 
-// gitExec выполняет git команду
-func (s *Storage) gitExec(repoDir, arg string, args ...string) error {
-	cmdArgs := append([]string{arg}, args...)
-	cmd := exec.Command("git", cmdArgs...)
-	cmd.Dir = repoDir
+// gitWorker — единственный горутин, выполняющий git-операции.
+// Запускается один раз при старте. Все коммиты идут строго последовательно.
+func (s *Storage) gitWorker() {
+	for range s.gitSignal {
+		// Debounce: ждём 2 секунды тишины, чтобы собрать серию изменений в один коммит.
+		timer := time.NewTimer(2 * time.Second)
+	drain:
+		for {
+			select {
+			case <-s.gitSignal:
+				// Пришёл ещё один сигнал — сбрасываем таймер
+				if !timer.Stop() {
+					<-timer.C
+				}
+				timer.Reset(2 * time.Second)
+			case <-timer.C:
+				break drain
+			}
+		}
+
+		s.doCommitAndPush()
+	}
+}
+
+// doCommitAndPush выполняет git add / commit / push.
+// Вызывается только из gitWorker — гарантированно однопоточно.
+func (s *Storage) doCommitAndPush() {
+	// git add: данные + фотографии (uploads/temp/ игнорируется через .gitignore)
+	if err := s.gitExec("add", "-A", "--", "data/", "uploads/"); err != nil {
+		log.Printf("Git add error: %v", err)
+		return
+	}
+
+	// Проверяем, есть ли изменения
+	statusCmd := exec.Command("git", "status", "--porcelain", "--", "data/", "uploads/")
+	statusCmd.Dir = s.gitRepoDir
+	out, _ := statusCmd.Output()
+	if len(out) == 0 {
+		return // ничего нет — пуш не нужен
+	}
+
+	// git commit
+	msg := fmt.Sprintf("auto-save: %s", time.Now().Format("2006-01-02 15:04:05"))
+	if err := s.gitExec("commit", "-m", msg); err != nil {
+		log.Printf("Git commit error: %v", err)
+		return
+	}
+
+	// git push
+	pushCmd := exec.Command("git", "push")
+	pushCmd.Dir = s.gitRepoDir
+	pushOut, err := pushCmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Git push error: %v\n%s", err, string(pushOut))
+		return
+	}
+	log.Printf("Git: данные сохранены и отправлены (%s)", strings.TrimSpace(string(pushOut)))
+}
+
+// gitExec выполняет git-команду в корне репозитория.
+func (s *Storage) gitExec(args ...string) error {
+	cmd := exec.Command("git", args...)
+	cmd.Dir = s.gitRepoDir
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
